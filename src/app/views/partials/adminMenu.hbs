@@ -1,0 +1,86 @@
+<div class="main-menu menu-fixed menu-light menu-accordion    menu-shadow " data-scroll-to-active="true" data-img="/admin/images/backgrounds/02.jpg">
+    <div class="navbar-header">
+    <ul class="nav navbar-nav flex-row">       
+        <li class="nav-item mr-auto"><a class="navbar-brand" href="index.html"><img class="brand-logo" alt="Chameleon admin logo" src="/admin/images/logo/logo.png"/>
+            <h3 class="brand-text">Shoe Store</h3></a></li>
+        <li class="nav-item d-md-none"><a class="nav-link close-navbar"><i class="ft-x"></i></a></li>
+    </ul>
+    </div>
+    <div class="main-menu-content">
+    <ul class="navigation navigation-main" id="main-menu-navigation" data-menu="menu-navigation">
+        {{!-- <li class="active"><a href="index.html"><i class="ft-home"></i><span class="menu-title" data-i18n="">Dashboard</span></a>
+        </li> --}}
+        <li class=" nav-item"><a href="/admin/accounts"><i class="ft-layers"></i><span class="menu-title" data-i18n="">Accounts</span></a>
+        </li>
+        <li class=" nav-item"><a href="/admin/categoryType"><i class="ft-layers"></i><span class="menu-title" data-i18n="">Category type</span></a>
+        </li>
+        <li class=" nav-item">
+            <a id="getAllType">
+                <i class="ft-server"></i>
+                <span class="menu-title" data-i18n="">Category</span>
+            </a>
+            <ul class="menu-content" id="displayType">
+                {{!-- Category by type call API and display here --}}
+            </ul>
+        </li>
+        <li class=" nav-item"><a><i class="ft-box"></i><span class="menu-title" data-i18n="">Product</span></a>
+            <ul class="menu-content">
+                <li><a class="menu-item" href="/admin/product">Product Manager</a>
+                </li>
+                <li><a class="menu-item" href="/admin/product/add">Add Product</a>
+                </li>
+            </ul>
+        </li>
+        <li class="nav-item"><a href="/admin/promotional"><i class="ft-droplet"></i><span class="menu-title" data-i18n="">Promotional</span></a>
+        </li>
+        <li class=" nav-item"><a><i class="ft-credit-card"></i><span class="menu-title" data-i18n="">Order</span></a>
+            <ul class="menu-content">
+                <li><a class="menu-item" href="/admin/order">Order Completed</a>
+                </li>
+                <li><a class="menu-item" href="/admin/orderInTransit">Order In Transition</a>
+                </li>
+                <li><a class="menu-item" href="/admin/orderConfirmed">Order Confirmed</a>
+                </li>
+                <li><a class="menu-item" href="/admin/orderNotConfirm">Order not confirmed</a>
+                </li>
+            </ul>
+        </li>
+        {{!-- <li class=" nav-item"><a href="icons.html"><i class="ft-droplet"></i><span class="menu-title" data-i18n="">Icons</span></a>
+        </li>
+        <li class=" nav-item"><a href="cards.html"><i class="ft-layers"></i><span class="menu-title" data-i18n="">Cards</span></a>
+        </li>
+        <li class=" nav-item"><a href="buttons.html"><i class="ft-box"></i><span class="menu-title" data-i18n="">Buttons</span></a>
+        </li> --}}
+        {{!-- <li class=" nav-item"><a href="typography.html"><i class="ft-bold"></i><span class="menu-title" data-i18n="">Typography</span></a>
+        </li> --}}
+        {{!-- <li class=" nav-item"><a href="tables.html"><i class="ft-credit-card"></i><span class="menu-title" data-i18n="">Tables</span></a>
+        </li> --}}
+        {{!-- <li class=" nav-item"><a href="form-elements.html"><i class="ft-layout"></i><span class="menu-title" data-i18n="">Form Elements</span></a>
+        </li> --}}
+        {{!-- <li class=" nav-item"><a href="https://themeselection.com/demo/chameleon-admin-template/documentation"><i class="ft-book"></i><span class="menu-title" data-i18n="">Documentation</span></a>
+        </li> --}}
+    </ul>
+    </div><a class="btn btn-danger btn-block btn-glow btn-upgrade-pro mx-1" href="https://themeselection.com/products/chameleon-admin-modern-bootstrap-webapp-dashboard-html-template-ui-kit/" target="_blank" style="display: none">Download PRO!</a>
+    <div class="navigation-background"></div>
+</div>
+<script>
+    document.getElementById('getAllType').addEventListener('click', () => {
+        $.ajax({
+            url: "/admin/categoryType/getAll",
+            method: 'GET',
+            success:function(datas){
+                var output = "";
+                datas.forEach((data) => {
+                    output += 
+                    `<li>
+                        <a class="menu-item" href="/admin/category/${data._id}">Category by ${data.type}</a>
+                    </li>`;
+                });
+                $("#displayType").html(output);
+            },
+            error: function(err){
+                alert('error', err);
+            }
+        })
+    })
+</script>

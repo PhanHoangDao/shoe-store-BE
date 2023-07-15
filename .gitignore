@@ -1,0 +1,4 @@
+/node_modules
+# Disable folder upload
+/src/public/uploadWithRefactorDB
+/src/public/upload

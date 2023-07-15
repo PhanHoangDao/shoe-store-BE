@@ -1,0 +1,351 @@
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-wrapper-before"></div>
+        <div class="content-header row">
+            <div class="content-header-left col-md-4 col-12 mb-2">
+            <h3 class="content-header-title">Product</h3>
+            </div>
+            <div class="content-header-right col-md-8 col-12">
+            <div class="breadcrumbs-top float-md-right">
+                <div class="breadcrumb-wrapper mr-1">
+                <ol class="breadcrumb">
+                    {{!-- must automation this link --}}
+                    <li class="breadcrumb-item"><a href="/admin">Home</a>
+                    </li>
+                    <li class="breadcrumb-item"><a href="/admin/product">Product</a>
+                    </li>
+                    <li class="breadcrumb-item active">Add Product
+                    </li>
+                </ol>
+                </div>
+            </div>
+            </div>
+        </div>
+        <div class="content-body">
+            <div class="row">
+                <div class="col-12">
+                    <form action="/admin/product/save" method="POST" enctype="multipart/form-data" id="product-add-form">
+                        {{!-- Common info of shoe --}}
+                        <div class="card">
+                            <div class="card-header">
+                                <h4 class="card-title">Add Product</h4>
+                                <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                                <div class="heading-elements">
+                                    <ul class="list-inline mb-0">
+                                        <li><a data-action="collapse"><i class="ft-minus"></i></a></li>
+                                        <li><a data-action="reload"><i class="ft-rotate-cw"></i></a></li>
+                                        <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                        <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="card-content collapse show">
+                                {{!-- why have enctype and it's not work --}}
+                                <div style="margin: 0 20px;">
+                                    <div class="form-group">
+                                        <label for="exampleInputEmail1">Name</label>
+                                        <input type="text" class="form-control" name="name" placeholder="Enter shoeName">
+                                    </div>
+                                    
+                                    {{!-- Get all CateTyped added and category of this type --}}
+                                    {{getAnotherCateAdded listCateType listAnotherCateAdded}}
+                                    
+                                    <div class="form-group">
+                                        <label for="exampleInputEmail1">Introduce of product</label>
+                                        <input type="text" class="form-control" name="introduce" placeholder="Enter the introduce of this shoe">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="exampleInputPassword1">Description</label>
+                                        <input type="text" class="form-control" name="description" placeholder="Enter Description">
+                                    </div>
+                                    {{#if errImage}}
+                                        <div class="alert alert-warning" role="alert">
+                                            {{errImage}}
+                                        </div>
+                                    {{/if}}  
+                                    <div class="form-group">
+                                        <label for="exampleInputPassword1">Gender</label>
+                                        <select name="gender" class="form-control">
+                                            <option value="male">Male</option>
+                                            <option value="female">Female</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {{!-- List to choose to render color of product --}}
+                        <div class="card">
+                            <div class="card-header">
+                                <h4 class="card-title">Choose Color</h4>
+                                <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                                <div class="heading-elements">
+                                    <ul class="list-inline mb-0">
+                                        <li><a data-action="collapse"><i class="ft-minus"></i></a></li>
+                                        <li><a data-action="reload"><i class="ft-rotate-cw"></i></a></li>
+                                        <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                        <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="card-content collapse show">
+                                {{!-- why have enctype and it's not work --}}
+                                <div class="cart-body">
+                                    <div style="margin: 0 20px;">
+                                        <div class="form-group">
+                                            <select class="select2 form-control" id="color-select" multiple style="margin-bottom: 20px">
+                                                {{#each listColor}}
+                                                    <option value="{{this.cateId}}">{{this.cateName}}</option>
+                                                {{/each}}
+                                            </select>
+                                            <button id="btnRenderSelectedColor" class="btn btn-primary">Render Selected Color</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{!-- Image and Size of Color Render when selected --}}
+                        <div id="render-color-selected"></div>  
+
+                        <button type="submit" class="btn btn-primary" id="btnAdd">Submit</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // list color with image and all elements of it
+    let listColor = {{{json listColor}}};
+    let listColorSelected = [];
+
+    // list to render color
+    let listRenderSelectedColor = document.getElementById("render-color-selected");
+
+    document.getElementById("btnRenderSelectedColor").addEventListener("click", (event) => {
+        event.preventDefault();
+        var selectElement = document.getElementById('color-select');
+        var selectedColors = [], option, elements;
+        
+        for (var i = 0; i < selectElement.options.length; i++) {
+            option = selectElement.options[i];
+            if (!option.selected) {
+                continue;
+            }
+            
+            listColorSelected.push(option.value);
+
+            listColor.forEach(color => {
+                if(color.cateId === option.value) {
+                    listRenderSelectedColor.insertAdjacentHTML("beforeend", 
+                        `<div class="card">
+                            <div class="card-header">
+                                <h4 class="card-title">${color.cateName}</h4>
+                                <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                                <div class="heading-elements">
+                                    <ul class="list-inline mb-0">
+                                        <li><a data-action="collapse"><i class="ft-minus"></i></a></li>
+                                        <li><a data-action="reload"><i class="ft-rotate-cw"></i></a></li>
+                                        <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                        <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="card-content collapse show" style="margin: 0 20px;">
+                                <div id="imageFields${color.cateName}">                                    
+                                    <div class="form-group imageField${color.cateName}">
+                                        <input class="form-check-input" type="checkbox" id="flexCheckChecked" value="0" name="checkBoxImage${color.cateName}" onclick="getArrayImageDelete${color.cateName}(0)">
+                                        <label for="exampleInputPassword1">Images</label>
+                                        <input type="file" class="form-control imageWithColor${color.cateName}" name="image" placeholder="Select image" accept='image/*' value="0" onclick="displayImg${color.cateName}(0)">
+                                    </div>
+                                </div>
+                                <button class="btn btn-primary" id="btnAddFieldImage${color.cateName}" type="button">Add field Image</button>
+                                <button class="btn btn-primary" id="btnDeleteFieldImage${color.cateName}" type="button">Delete Image Of Shoe</button>
+                                {{!-- Size and price of each size and color --}}
+                                <div class="form-group">
+                                    <label for="exampleInputPassword1">Sizes in US/UK (Enter the amount of the shoes)</label>
+                                    {{#each listSizeAdded}}
+                                        <div class ="form-check" style="margin-bottom: 14px">
+                                            <input value="{{this.cateId}}" name="size${color.cateId}" type="hidden">
+                                            <label class="form-check-label" for="flexCheckDefault" style="margin-right: 50px; min-width: 30px">
+                                                {{this.cateName}}
+                                            </label>
+                                            <input type="number" name="amountOfSize${color.cateId}" placeholder="Enter amount of this size" value="0" min="0">
+                                            <label class="form-check-label" for="flexCheckDefault" style="margin-right: 10px; margin-left: 20px; min-width: 30px">Price</label>
+                                            <input type="number" name="price${color.cateId}" placeholder="Enter price of this size" value="0" min="0">
+                                        </div> 
+                                    {{/each}}
+                                </div> 
+                            </div>
+                        </div>`
+                    );
+
+                    // add or delete image field of color
+                    var dynamicColor = {};
+                    window["listFieldImage" + color.cateName] = document.getElementById(`imageFields${color.cateName}`);
+                    dynamicColor["btnAddFieldImage" + color.cateName] = document.getElementById(`btnAddFieldImage${color.cateName}`);
+                    dynamicColor["btnDeleteFieldImage" + color.cateName] = document.getElementById(`btnDeleteFieldImage${color.cateName}`);
+                    window["imageField" + color.cateName] = document.getElementsByClassName(`imageField${color.cateName}`);
+                    dynamicColor["imageWithColor" + color.cateName] = document.getElementsByClassName(`imageWithColor${color.cateName}`);
+
+                    // delete image of shoes
+                    window["listCheckBoxImage" + color.cateName] = document.getElementsByName(`checkBoxImage${color.cateName}`);
+                    window["arrayImageDelete" + color.cateName] = [];
+
+                    // selected file
+                    window["selectedFile" + color.cateName] = document.getElementsByClassName(`imageWithColor${color.cateName}`);
+
+                    // display Image and store imageName
+                    window["imageName" + color.cateName] = document.getElementsByName(`imageName${color.cateName}`);
+
+                    // custom function
+                    // function get array image delete
+                    const functionName = `getArrayImageDelete${color.cateName}`;
+                    window[functionName] = new Function(`
+                        return function ${functionName}(position) {
+                            window["listCheckBoxImage${color.cateName}"] = document.getElementsByName("checkBoxImage${color.cateName}");
+                            //console.log("test", position, window["listCheckBoxImage${color.cateName}"][position]);
+                            window["listCheckBoxImage${color.cateName}"][position].addEventListener('change', () => {
+                                window["arrayImageDelete${color.cateName}"] = 
+                                    Array.from(window["listCheckBoxImage${color.cateName}"]) // Convert checkboxes to an array to use filter and map.
+                                    .filter(i => i.checked) // Use Array.filter to remove unchecked checkboxes.
+                                    .map(i => i.value).sort(); // Use Array.map to extract only the checkbox values from the array of objects.
+                                //console.log(checkbox["arrayImageDelete${color.cateName}"]);
+                            })
+                        }`)();
+
+                    // function to display image when update or add
+                    const displayName = `displayImg${color.cateName}`;
+                    window[displayName] = new Function(`
+                        return function ${displayName}(position) {
+                            window["selectedFile${color.cateName}"] = document.getElementsByClassName("imageWithColor${color.cateName}");
+
+                            window["selectedFile${color.cateName}"][position].addEventListener('change', (event) => {
+                                // display new image when have update.
+                                Array.from(event.target.files).forEach((file) => {
+                                    var img = document.createElement('img');
+                                    var input = document.createElement('input');
+
+                                    // set attribute for tag input
+                                    input.setAttribute('type', 'hidden');
+                                    input.setAttribute('value', file.name);
+                                    // set avatar or list image for shoe
+                                    if(position == 0) {
+                                        input.setAttribute('name', 'avatar${color.cateName}');
+                                        // store file name
+                                        window["imageField${color.cateName}"][position].appendChild(input);
+                                    }
+                                    else {
+                                        input.setAttribute('name', 'imageName${color.cateName}');
+                                        // store file name
+                                        window["imageField${color.cateName}"][position].appendChild(input);
+                                    }
+  
+                                    // Set attributes for tag image
+                                    img.src = URL.createObjectURL(file);
+                                    img.style = "width: 25%;max-height: 310px;margin: 0.5% 37.5%; min-height: 105px; min-width: 10%;";
+                                    
+                                    // Append the img element to the image container
+                                    window["imageField${color.cateName}"][position].appendChild(img);
+                                    // free memory
+                                    img.onload = function() {
+                                        URL.revokeObjectURL(img.src);
+                                    }
+                                });
+                            }); 
+                        }`)();
+
+                    // add field image
+                    dynamicColor["btnAddFieldImage" + color.cateName].addEventListener('click', () => {
+                        const position = dynamicColor["imageWithColor" + color.cateName].length;
+                        window["listFieldImage" + color.cateName].insertAdjacentHTML('beforeend', 
+                        `<div class="form-group imageField${color.cateName}">
+                            <input class="form-check-input" type="checkbox" id="flexCheckChecked" value="${position}" name="checkBoxImage${color.cateName}" onclick="getArrayImageDelete${color.cateName}(${position})">
+                            <label for="exampleInputPassword1">Images</label>
+                            <input type="file" class="form-control imageWithColor${color.cateName}" name="image" id="image" value="${position}" onclick="displayImg${color.cateName}(${position})" multiple>
+                        </div>`
+                        );
+                    });  
+
+                    // delete field image on interface
+                    dynamicColor["btnDeleteFieldImage" + color.cateName].addEventListener('click', () => {
+                        window["selectedFile" + color.cateName] = document.getElementsByClassName(`imageWithColor${color.cateName}`);
+
+                        // get array of input type = file
+                        for(var i = 0; i < window["arrayImageDelete" + color.cateName].length; i++) { 
+                            for(var j = 0; j < window["selectedFile" + color.cateName].length; j++) { 
+                                if(window["arrayImageDelete" + color.cateName][i]===window["selectedFile" + color.cateName][j].defaultValue) {
+                                    window["listFieldImage" + color.cateName].removeChild(window["imageField" + color.cateName][j]);
+                                }
+                            }
+                        }
+                    }); 
+                }
+            });
+        }
+    });
+
+    var buttonSubmit = document.getElementById("btnAdd");
+
+    buttonSubmit.addEventListener("click", function(event) {
+        event.preventDefault();
+        buttonSubmit.disabled = true;
+
+        const form = document.getElementById("product-add-form");
+        const formData = new FormData(form);
+
+        let listInfoWithColor = [];
+
+        listColor.forEach((color) => {
+            listColorSelected.forEach((colorId) => {
+                if(color.cateId === colorId) {
+                    const avatar = document.getElementsByName(`avatar${color.cateName}`);
+                    const images = document.getElementsByName(`imageName${color.cateName}`);
+                    const size = document.getElementsByName(`size${color.cateId}`);
+                    const amountOfSize = document.getElementsByName(`amountOfSize${color.cateId}`);
+                    const price = document.getElementsByName(`price${color.cateId}`);
+
+                    const length = size.length;
+                    let listSize = [], listImage = [];
+
+                    images.forEach((image) => {
+                        listImage.push(image.value);
+                    })
+
+                    for(let i = 0; i < length; i++) {
+                        if(amountOfSize[i].value > 0 && price[i].value > 0) {
+                            listSize.push({
+                                sizeId: size[i].value,
+                                amount: amountOfSize[i].value,
+                                price: price[i].value,
+                            });
+                        }
+                    }
+
+                    // validate in here
+
+                    listInfoWithColor.push({
+                        colorId: color.cateId,
+                        listImg: listImage,
+                        listSize: listSize,
+                        avatar: avatar[0]?.value,
+                    });
+                }
+            });
+        });
+
+        formData.append("listImgWithColor", JSON.stringify(listInfoWithColor));
+
+        fetch("/admin/product/save", {
+            method: "POST",
+            body: formData
+        }).then((response) => {
+            window.location.href = "/admin/product";
+        }).catch((error) => {
+
+        })
+    });
+</script>
