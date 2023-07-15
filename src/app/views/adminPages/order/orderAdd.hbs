@@ -24,112 +24,248 @@
         <div class="content-body">
             <div class="row">
                 <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h4 class="card-title">Add Order</h4>
-                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
-                            <div class="heading-elements">
-                                <ul class="list-inline mb-0">
-                                    <li><a data-action="collapse"><i class="ft-minus"></i></a></li>
-                                    <li><a data-action="reload"><i class="ft-rotate-cw"></i></a></li>
-                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
-                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="card-content collapse show">
-                            {{!-- why have enctype and it's not work --}}
-                            <form action="/admin/order/save" method="POST" style="margin: 0 20px;">
-                                <div class="form-group">
-                                    <label for="exampleInputEmail1">Customer's name</label>
-                                    <select name="customerId" class="form-control">
-                                        <option value="">Select Customer</option>
-                                        {{#each listCustomer}}
-                                            <option value="{{this._id}}">{{this.fullname}}</option>
-                                        {{/each}}
-                                    </select>
+                    <form action="/admin/order/save" method="POST">
+                        {{!-- Info of order --}}
+                        <div class="card">
+                            <div class="card-header">
+                                <h4 class="card-title">Add Order</h4>
+                                <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                                <div class="heading-elements">
+                                    <ul class="list-inline mb-0">
+                                        <li><a data-action="collapse"><i class="ft-minus"></i></a></li>
+                                        <li><a data-action="reload"><i class="ft-rotate-cw"></i></a></li>
+                                        <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                        <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                    </ul>
                                 </div>
-                                <div id="listSubOrder">
-                                    <h2>Sub Order 1</h2>
+                            </div>
+                            <div class="card-content collapse show">
+                                <div style="margin: 0 20px;">
                                     <div class="form-group">
-                                        <label for="exampleInputEmail1">Name Of Shoe</label>
-                                        <select name="shoeId" class="form-control" onchange="getShoeId(this, 1)">
-                                            <option value="">Select Shoe</option>
-                                            {{#each listShoe}}
-                                                <option value="{{this._id}}">{{this.name}}</option>
+                                        <label for="exampleInputEmail1">Customer's name</label>
+                                        <select name="customerId" class="form-control" required>
+                                            <option value="">Select Customer</option>
+                                            {{#each listCustomer}}
+                                                <option value="{{this._id}}">{{this.fullname}}</option>
                                             {{/each}}
                                         </select>
                                     </div>
                                     <div class="form-group">
-                                        <label for="exampleInputEmail1">Size</label>
-                                        <select name="size" class="form-control" id="setSize1">
-                                           
+                                        <label for="exampleInputEmail1">Payment Method</label>
+                                        <select name="payment" class="form-control">
+                                            <option value="">Select payment</option>
+                                                <option value="shipCOD">ShipCOD</option>
+                                                <option value="paypal">Paypal</option>
                                         </select>
                                     </div>
-                                    <div class="form-group">
-                                        <label for="exampleInputPassword1">Quantity</label>
-                                        <input type="text" class="form-control" name="quantity" placeholder="Enter Description">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="exampleInputPassword1">Price</label>
-                                        <input type="text" class="form-control" name="price" id="setPrice1" placeholder="Enter Description">
-                                    </div>
-                                </div> 
-                                <button class="btn btn-primary" type="button" id="btnNewSubOrder">New subOrder</button>
-                                <button type="submit" class="btn btn-primary">Submit</button>
-                            </form>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+
+                        {{#if errText}}
+                            <div class="alert alert-warning" role="alert">
+                                {{errText}}
+                            </div>
+                        {{/if}}
+                        {{!-- Info of subOrder --}}
+                        <div id="listSubOrder">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h4 class="card-title">Sub Order 1</h4>
+                                    <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                                    <div class="heading-elements">
+                                        <ul class="list-inline mb-0">
+                                            <li><a data-action="collapse"><i class="ft-minus"></i></a></li>
+                                            <li><a data-action="reload"><i class="ft-rotate-cw"></i></a></li>
+                                            <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                            <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="card-content collapse show">
+                                    <div style="margin: 0 20px;">
+                                        <div class="form-group">
+                                            <label for="exampleInputEmail1">Name Of Shoe</label>
+                                            <div id="select-wrapper1" style="position: relative;">
+                                                <select name="shoeId" class="form-control" onchange="getColorOfShoe(this, 1)" required>
+                                                    <option value="">Select Shoe</option>
+                                                    {{#each listShoe}}
+                                                        <option value="{{this._id}}">{{this.name}}</option>
+                                                    {{/each}}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="exampleInputEmail1">Color</label>
+                                            <select name="color" class="form-control" id="setColor1" onchange="getSizeOfShoe(this, 1)" required>
+                                            
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="exampleInputEmail1">Size</label>
+                                            <select name="size" class="form-control" id="setSize1" onchange="getPrice(this , 1)" required>
+                                            
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="exampleInputPassword1">Price</label>
+                                            <input type="text" class="form-control" name="price" id="setPrice1" placeholder="Enter Price" readonly>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="exampleInputPassword1">Quantity</label>
+                                            <input type="number" class="form-control" name="quantity" placeholder="Enter Quantity" required>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary" type="button" id="btnNewSubOrder">New subOrder</button>
+                        <button type="submit" class="btn btn-primary" id="btnSubmit">Submit</button>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-<script>
-    var idOfSubOrder = 1;
-    function getShoeId(seletedShoe, idOfSubOrder) {
-        var shoeId = seletedShoe.value;
-        var output = '', price = 0;
-        var list = {{{json listShoe}}};
-        var listSize = {{{json listSize}}}
-        for(var i = 0; i < list.length; i++) {
-            if(list[i]._id === shoeId) {
-                price = list[i].price;
-                for(var j = 0; j < listSize.length; j++) {
-                    output += `<option value="${listSize[j].cateName}">${listSize[j].cateName}</option>`
-                }
-            }
-        }
-        $(`#setSize${idOfSubOrder}`).html(output);
-        document.getElementById(`setPrice${idOfSubOrder}`).value = price;
+<style>
+    .spinner-border {
+        position: absolute;
+        display: inline-block;
+        width: 2rem;
+        height: 2rem;
+        border: 0.25em solid currentColor;
+        border-right-color: transparent;
+        border-radius: 50%;
+        animation: spinner-border 0.75s linear infinite;
+        position: absolute;
+        top: 20%;
+        right: 22px;
+        transform: translateY(-50%);
     }
+
+    @keyframes spinner-border {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+</style>
+<script>
+    let idOfSubOrder = 1;
+    let shoeInfo, infoByColor;
+
+    function getColorOfShoe(selectedShoe, idOfSubOrder) {
+        let selectWrapper = document.getElementById(`select-wrapper${idOfSubOrder}`);
+        let selectElement = document.getElementById(`select-wrapper${idOfSubOrder}`).querySelector('select');
+
+        selectElement.disabled = true;
+        selectWrapper.insertAdjacentHTML('beforeend', 
+            `<div class="spinner-border" role="status"></div>`
+        );
+
+        let shoeId = selectedShoe.value;
+        let outputColor = '<option value="">Select Color</option>';
+
+        fetch(`/api/v1/shoes/${shoeId}`)
+            .then(response => response.json())
+            .then((data) => {
+                shoeInfo = data;
+                data.color.forEach((color) => {
+                    outputColor += `<option value="${color.id}">${color.colorName}</option>`
+                })
+                console.log(data);
+                $(`#setColor${idOfSubOrder}`).html(outputColor);
+            })
+            .catch(err => {
+                console.err(err)
+            })
+            .finally(() => {
+                selectElement.disabled = false;
+                selectWrapper.querySelector('.spinner-border').remove();
+            });
+    }
+
+    function getSizeOfShoe(selectedColor, idOfSubOrder) {
+        let colorId = selectedColor.value;
+        let outputSize = '<option value="">Select Size</option>';
+
+        infoByColor = shoeInfo.color.find((color) => color.id === colorId);
+
+        infoByColor.sizes.forEach((size) => {
+            outputSize += `<option value="${size.sizeId}">${size.sizeName}</option>`
+        })
+
+        $(`#setSize${idOfSubOrder}`).html(outputSize);
+    }
+
+    function getPrice(selectedSize, idOfSubOrder) {
+        let sizeId = selectedSize.value;
+
+        const infoOfSize = infoByColor.sizes.find((size) => size.sizeId === sizeId);
+
+        document.getElementById(`setPrice${idOfSubOrder}`).value = infoOfSize.price;
+    }
+
     document.getElementById('btnNewSubOrder').addEventListener('click', (e) => {
+        e.preventDefault();
         idOfSubOrder++;
         document.getElementById('listSubOrder').insertAdjacentHTML('beforeend', 
-        `<h2>Sub Order ${idOfSubOrder}</h2>
-        <div class="form-group">
-            <label for="exampleInputEmail1">Name Of Shoe</label>
-            <select name="shoeId" class="form-control" onchange="getShoeId(this, ${idOfSubOrder})">
-                <option value="">Select Shoe</option>
-                {{#each listShoe}}
-                    <option value="{{this._id}}">{{this.name}}</option>
-                {{/each}}
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="exampleInputEmail1">Size</label>
-            <select name="size" class="form-control" id="setSize${idOfSubOrder}">
+            `<div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Sub Order ${idOfSubOrder}</h4>
+                    <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                    <div class="heading-elements">
+                        <ul class="list-inline mb-0">
+                            <li><a data-action="collapse"><i class="ft-minus"></i></a></li>
+                            <li><a data-action="reload"><i class="ft-rotate-cw"></i></a></li>
+                            <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                            <li><a data-action="close"><i class="ft-x"></i></a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-content collapse show">
+                    <div style="margin: 0 20px;">
+                        <div class="form-group">
+                            <label for="exampleInputEmail1">Name Of Shoe</label>
+                            <div id="select-wrapper${idOfSubOrder}" style="position: relative;">
+                                <select name="shoeId" class="form-control" onchange="getColorOfShoe(this, ${idOfSubOrder})">
+                                    <option value="">Select Shoe</option>
+                                    {{#each listShoe}}
+                                        <option value="{{this._id}}">{{this.name}}</option>
+                                    {{/each}}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="exampleInputEmail1">Color</label>
+                            <select name="color" class="form-control" id="setColor${idOfSubOrder}" onchange="getSizeOfShoe(this, ${idOfSubOrder})">
+                            
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="exampleInputEmail1">Size</label>
+                            <select name="size" class="form-control" id="setSize${idOfSubOrder}" onchange="getPrice(this , ${idOfSubOrder})">
+                            
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="exampleInputPassword1">Price</label>
+                            <input type="text" class="form-control" name="price" id="setPrice${idOfSubOrder}" placeholder="Enter Price" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="exampleInputPassword1">Quantity</label>
+                            <input type="text" class="form-control" name="quantity" placeholder="Enter Quantity">
+                        </div>
+                    </div>
+                </div>
+            </div>`
+        );
+    })
 
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="exampleInputPassword1">Quantity</label>
-            <input type="text" class="form-control" name="quantity" placeholder="Enter Description">
-        </div>
-        <div class="form-group">
-            <label for="exampleInputPassword1">Price</label>
-            <input type="text" class="form-control" name="price" id="setPrice${idOfSubOrder}" placeholder="Enter Description">
-        </div>`);
+    document.getElementById('btnSubmit').addEventListener('click', (e) => {
+
     })
 </script>

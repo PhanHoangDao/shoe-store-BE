@@ -6,7 +6,7 @@ mongoose.plugin(URLSlug);
 const Category = new Schema(
 	{
 		typeId: { type: String, maxLength: 50 },
-		name: { type: String, maxLength: 255 },
+		name: { type: String, maxLength: 255, lowerCase: true, trim: true },
 		description: { type: String, maxLength: 600 },
 		slug: { type: String, slug: "name", unique: true },
 	},

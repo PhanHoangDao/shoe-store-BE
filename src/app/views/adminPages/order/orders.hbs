@@ -42,7 +42,12 @@
                                 <p class="card-text">Add <code>.table-bordered</code> for borders on all sides of the table and cells.</p>
                             </div> --}}
                             <div class="table-responsive">
-                                <table class="table table-bordered mb-0" style="text-align: center;">
+                                {{#if messageErr}}
+                                    <div class="alert alert-warning" role="alert">
+                                        {{messageErr}}
+                                    </div>
+                                {{/if}}
+                                <table id="orderTable" class="table table-striped table-bordered zero-configuration" style="text-align: center;">
                                     <thead>
                                         <tr>
                                             <th>No</th>
@@ -63,7 +68,7 @@
                                             <td>{{this.total}}</td>
                                             <td>
                                                 {{#when this.status 'noteq' 3}}
-                                                    <button type="button" class="btn btn-primary" id="btnConfirm" onclick="changeStatusOrder({{this._id}}, {{this.status}})">
+                                                    <button type="button" class="btn btn-primary" id="btnConfirm" onclick="changeStatusOrder({{this._id}}, {{this.status}})" style="{{#when this.status 'eq' 2}} pointer-events: none; opacity: 0.5; cursor: not-allowed;{{/when}}">
                                                         {{#when this.status 'eq' 0}}
                                                             Confirm
                                                         {{/when}}
@@ -111,7 +116,21 @@
 <form name="revert-order-form" method="POST"></form>
 
 <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var orderTable = $('#orderTable').DataTable({
+            columnDefs: [
+                { targets: [0, 1, 2, 3], orderable: true },
+                { targets: [4, 5, 6], orderable: false }
+            ],
+
+            // Set initial sorting column and direction
+            order: [[0, 'asc']]
+        });
+
+    });
+
     function changeStatusOrder(orderId, currentStatus) {
+        console.log("test");
         // form and button for change order status
         var changeStatusOrderForm = document.forms['confirm-order-form'];
         // When click button confirm to change order status

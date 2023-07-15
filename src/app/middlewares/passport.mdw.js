@@ -145,10 +145,10 @@ module.exports = {
 			const decode = jwt.decode(token);
 			jwt.verify(token, ACCESS_JWT_SECRET);
 
-			if (req.originalUrl.endsWith("/admin/", 7) && decode.permission !== 0) {
+			if (req.originalUrl.endsWith("/admin/", 7) && decode.permission === 2) {
 				return res.redirect("/");
 			}
-			
+
 			next();
 		} catch (err) {
 			if (err.name === "TokenExpiredError") {

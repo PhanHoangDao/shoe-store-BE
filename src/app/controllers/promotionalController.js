@@ -1,44 +1,97 @@
 const Promotional = require("../models/promotional.model");
+const Account = require("../models/account.model");
 const {
 	mutipleMongooseToObject,
 	mongooseToObject,
 } = require("../../utils/mongoose");
 const jwtHelp = require("../../utils/jwtHelp");
+const commonHelp = require("../../utils/commonHelp");
+const PROMO_ACTIONS = require("../../constants/promoAction");
 
 class promotionalController {
 	// [GET] /promotional
 	async manager(req, res, next) {
-		// Can use lean() as a callback to change mongoooseList to Object
-		Promotional.find()
-			.then((promotes) => {
-				res.render("adminPages/promotional/manager", {
-					promotes: mutipleMongooseToObject(promotes),
+		try {
+			const routerUrl = req.url;
+
+			let promotions, account;
+			if (routerUrl === "/promotionalByCustomer") {
+				promotions = await Promotional.find({
+					userId: { $exists: true },
+				}).lean();
+
+				await Promise.all(
+					promotions.map(async (promo) => {
+						promo.code = promo.code.toUpperCase();
+						promo.description = commonHelp.capitalizeFirstLetter(
+							promo.description
+						);
+						promo.startDate = commonHelp.formatDateForPromo(promo.startDate);
+						promo.endDate = commonHelp.formatDateForPromo(promo.endDate);
+						account = await Account.findOne({ _id: promo.userId });
+						promo.userName = account.fullname;
+					})
+				);
+
+				return res.render("adminPages/promotional/managerPromoByCustomer", {
+					promotes: promotions,
 					layout: "adminLayout",
+					permission: jwtHelp.decodeTokenGetPermission(
+						req.cookies.Authorization
+					),
 				});
-			})
-			.catch((err) => {
-				next(err);
+			}
+			promotions = await Promotional.find({ amount: { $exists: true } }).lean();
+
+			promotions.forEach((promo) => {
+				promo.code = promo.code.toUpperCase();
+				promo.description = commonHelp.capitalizeFirstLetter(promo.description);
+				promo.startDate = commonHelp.formatDateForPromo(promo.startDate);
+				promo.endDate = commonHelp.formatDateForPromo(promo.endDate);
 			});
+
+			res.render("adminPages/promotional/manager", {
+				promotes: promotions,
+				layout: "adminLayout",
+				permission: jwtHelp.decodeTokenGetPermission(req.cookies.Authorization),
+			});
+		} catch (err) {
+			console.error(err);
+		}
 	}
 
 	// [GET] /promotional/renderCreate
 	renderCreate(req, res) {
-		if (req.query != "warning") delete req.session.errImage;
+		if (jwtHelp.decodeTokenGetPermission(req.cookies.Authorization) === 1) {
+			return res.redirect("back");
+		}
+		if (req.query != "warning") delete req.session.errText;
 		res.render("adminPages/promotional/promoAdd", {
 			layout: "adminLayout",
 		});
 	}
 
 	// [GET] /promotional/renderUpdate
-	renderUpdate(req, res) {
-		Promotional.findById({ _id: req.params.id })
-			.then((promo) => {
-				res.render("adminPages/promotional/promoUpdate", {
-					promo: mongooseToObject(promo),
-					layout: "adminLayout",
-				});
-			})
-			.catch((err) => console.log(err));
+	async renderUpdate(req, res) {
+		try {
+			if (jwtHelp.decodeTokenGetPermission(req.cookies.Authorization) === 1) {
+				return res.redirect("back");
+			}
+			if (req.query != "warning") delete req.session.errText;
+			const promo = await Promotional.findById({ _id: req.params.id }).lean();
+			promo.code = promo.code.toUpperCase();
+			promo.description = commonHelp.capitalizeFirstLetter(promo.description);
+			promo.startDate = commonHelp.formatDateForPromo(promo.startDate);
+			promo.endDate = commonHelp.formatDateForPromo(promo.endDate);
+			promo.dateRange = promo.startDate + " - " + promo.endDate;
+
+			res.render("adminPages/promotional/promoUpdate", {
+				promo: promo,
+				layout: "adminLayout",
+			});
+		} catch (err) {
+			console.log(err);
+		}
 	}
 
 	// [GET] /promotional/getAll
@@ -51,34 +104,48 @@ class promotionalController {
 
 	// [POST] /promotional/add
 	async create(req, res) {
-		// req.body.type = req.query.type;
-		const newPromo = req.body;
-		const promo = new Promotional(newPromo);
-		if (await this.isExitedPromo(promo.code)) {
-			const backUrl = req.header("Referer") || "/";
-			//throw error for the view...
-			req.session.errText = "This promotion already existed. Please try again.";
-			return res.redirect(backUrl + "?warning");
+		try {
+			if (jwtHelp.decodeTokenGetPermission(req.cookies.Authorization) === 1) {
+				return res.redirect("back");
+			}
+			// req.body.type = req.query.type;
+			const newPromo = req.body;
+			const [startDate, endDate] = req.body.dateRange.split("-");
+			newPromo.startDate = commonHelp.formatDateTime(startDate.trim());
+			newPromo.endDate = commonHelp.formatDateTime(endDate.trim());
+			const promo = new Promotional(newPromo);
+
+			if (await this.isExitedPromo(promo.code)) {
+				const backUrl = req.header("Referer") || "/";
+				//throw error for the view...
+				req.session.errText =
+					"This promotion already existed. Please try again.";
+				return res.redirect(backUrl + "?warning");
+			}
+			await promo.save();
+			res.redirect("/admin/promotional");
+		} catch (err) {
+			console.log(err);
 		}
-		promo
-			.save()
-			.then(() => {
-				res.redirect("/admin/promotional");
-			})
-			.catch((err) => {
-				console.log(err);
-			});
 	}
 
 	//[PUT] /promotional/saveUpdate/:id
 	async update(req, res) {
+		if (jwtHelp.decodeTokenGetPermission(req.cookies.Authorization) === 1) {
+			return res.redirect("back");
+		}
 		if (await this.isExitedPromo(req.body.code)) {
 			const backUrl = req.header("Referer") || "/";
 			//throw error for the view...
 			req.session.errText = "This promotion already existed. Please try again.";
 			return res.redirect(backUrl + "?warning");
 		}
-		Promotional.updateOne({ _id: req.params.id }, req.body)
+		const promoUpdate = req.body;
+		const [startDate, endDate] = req.body.dateRange.split("-");
+		promoUpdate.startDate = startDate;
+		promoUpdate.endDate = endDate;
+
+		Promotional.updateOne({ _id: req.params.id }, promoUpdate)
 			.then(() => {
 				res.redirect(`/admin/promotional`);
 			})
@@ -89,6 +156,9 @@ class promotionalController {
 
 	//[DELETE] /promotional/delete/:id
 	delete(req, res) {
+		if (jwtHelp.decodeTokenGetPermission(req.cookies.Authorization) === 1) {
+			return res.redirect("back");
+		}
 		Promotional.deleteOne({ _id: req.params.id })
 			.then(() => {
 				res.redirect("/admin/promotional");
@@ -120,18 +190,32 @@ class promotionalController {
 	 *         message: Error
 	 */
 	async availablePromotion(req, res) {
-		const userId = jwtHelp.decodeTokenGetUserId(
-			req.headers.authorization.split(" ")[1]
-		);
-		const currentDate = new Date();
-		const listPromotion = await Promotional.find({
-			$and: [
-				{ startDate: { $lte: currentDate } },
-				{ endDate: { $gte: currentDate } },
-				{ $or: [{ amount: { $gt: 0 } }, { userId: userId }] },
-			],
-		});
-		res.status(200).send({ listPromotion });
+		try {
+			const userId = jwtHelp.decodeTokenGetUserId(
+				req.headers.authorization.split(" ")[1]
+			);
+			const currentDate = new Date().toUTCString();
+			console.log(currentDate);
+			const listPromotion = await Promotional.find({
+				$and: [
+					{ startDate: { $lte: currentDate } },
+					{ endDate: { $gte: currentDate } },
+					{ $or: [{ amount: { $gt: 0 } }, { userId: userId }] },
+				],
+			}).lean();
+
+			listPromotion.forEach((promotion) => {
+				promotion.code = promotion.code.toUpperCase();
+				promotion.description = commonHelp.capitalizeFirstLetter(
+					promotion.description
+				);
+			});
+
+			res.status(200).send({ listPromotion });
+		} catch (err) {
+			console.log(err);
+			res.status(200).send(err);
+		}
 	}
 
 	/**
@@ -182,7 +266,7 @@ class promotionalController {
 			const resultHandle = await this.handlePromo(
 				listPromoCode,
 				totalCart,
-				"checkPromo",
+				PROMO_ACTIONS.checkPromo,
 				userId
 			);
 
@@ -201,13 +285,6 @@ class promotionalController {
 	}
 
 	async handlePromo(listPromoCode, totalMoney, action, userId) {
-		let promo,
-			totalDiscount = 0,
-			invalidPromo,
-			listPromoApplied = [];
-
-		const currentDate = new Date();
-
 		// check duplicate promotion
 		const listUniquePromoCode = new Set(listPromoCode);
 		if (listUniquePromoCode.size !== listPromoCode.length) {
@@ -216,52 +293,17 @@ class promotionalController {
 				message: "Duplicate promotion code. Please try again.",
 			};
 		}
-		// TODO: Can fix return map function
-		// find promo and check promo is valid
-		await Promise.all(
-			listPromoCode.map(async (promoCode) => {
-				promo = await Promotional.findOne({
-					$and: [
-						{ code: promoCode },
-						{ startDate: { $lte: currentDate } },
-						{ endDate: { $gte: currentDate } },
-						{ $or: [{ amount: { $gt: 0 } }, { userId: userId }] },
-					],
-				});
 
-				// invalid promoCode
-				if (!promo) {
-					invalidPromo = promoCode;
-					return;
-				}
-				totalDiscount += Number(promo.discount);
-				if (action == "checkout") {
-					listPromoApplied.push({ id: promo._id, amount: promo?.amount });
-				}
-			})
-		);
+		const result = await this.handlePromoUsed(listPromoCode, action, userId);
 
-		if (invalidPromo) {
+		if (result.invalid) {
 			return {
 				invalid: true,
-				message: `Promo ${invalidPromo} is expired or out of stock. Please try again`,
+				message: result.message,
 			};
 		}
 
-		await Promise.all(
-			listPromoApplied.map(async (promoApplied) => {
-				if (promoApplied?.amount) {
-					await Promotional.updateOne(
-						{ _id: promoApplied.id },
-						{ amount: promoApplied.amount - 1 }
-					);
-				} else {
-					//delete promotion when use
-					await Promotional.deleteOne({ _id: promoApplied.id });
-				}
-			})
-		);
-
+		const totalDiscount = result.totalDiscount;
 		totalMoney = totalMoney - totalDiscount;
 		if (totalMoney < 0) {
 			totalMoney = 0;
@@ -296,6 +338,63 @@ class promotionalController {
 
 		const promo = await newPromo.save();
 		return promo.code;
+	}
+
+	async handlePromoUsed(listPromo, action, userId) {
+		let promo,
+			invalidPromo,
+			totalDiscount = 0,
+			listPromoApplied = [];
+
+		const currentDate = new Date().toISOString();
+		// TODO: Can fix return map function
+		// find promo and check promo is valid
+		await Promise.all(
+			listPromo.map(async (promoCode) => {
+				promoCode = promoCode.toLowerCase();
+				promo = await Promotional.findOne({
+					$and: [
+						{ code: promoCode },
+						{ startDate: { $lte: currentDate } },
+						{ endDate: { $gte: currentDate } },
+						{ $or: [{ amount: { $gt: 0 } }, { userId: userId }] },
+					],
+				});
+
+				// invalid promoCode
+				if (!promo) {
+					invalidPromo = promoCode;
+					return;
+				}
+				totalDiscount += Number(promo.discount);
+				if (action == PROMO_ACTIONS.checkoutWithPromo) {
+					listPromoApplied.push({ id: promo._id, amount: promo?.amount });
+				}
+			})
+		);
+
+		if (invalidPromo) {
+			return {
+				invalid: true,
+				message: `Promo ${invalidPromo} is expired or out of stock. Please try again`,
+			};
+		}
+
+		await Promise.all(
+			listPromoApplied.map(async (promoApplied) => {
+				if (promoApplied?.amount) {
+					await Promotional.updateOne(
+						{ _id: promoApplied.id },
+						{ amount: promoApplied.amount - 1 }
+					);
+				} else {
+					//delete promotion when use
+					await Promotional.deleteOne({ _id: promoApplied.id });
+				}
+			})
+		);
+
+		return { invalid: false, totalDiscount };
 	}
 
 	// TODO: Check in here

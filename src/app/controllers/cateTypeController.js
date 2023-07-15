@@ -5,6 +5,8 @@ const {
 	mongooseToObject,
 } = require("../../utils/mongoose");
 const categoryHelp = require("../../utils/categoryHelp");
+const commonHelp = require("../../utils/commonHelp");
+const jwtHelp = require("../../utils/jwtHelp");
 
 class cateTypeController {
 	// [GET] /category?type='...'
@@ -43,11 +45,15 @@ class cateTypeController {
 	 */
 	async manager(req, res, next) {
 		try {
-			const cateTypes = await CategoryType.find();
-			// req.io.sockets.emit("testDisplay", {listCateType: cateTypes});
+			const cateTypes = await CategoryType.find().lean();
+
+			cateTypes.forEach((cateType) => {
+				cateType.type = commonHelp.capitalizeFirstLetter(cateType.type);
+			});
 			res.render("adminPages/categoryType/manager", {
-				cateTypes: mutipleMongooseToObject(cateTypes),
+				cateTypes: cateTypes,
 				layout: "adminLayout",
+				permission: jwtHelp.decodeTokenGetPermission(req.cookies.Authorization),
 			});
 		} catch (err) {
 			console.error(err);
@@ -56,6 +62,7 @@ class cateTypeController {
 
 	// [GET] /categoryType/renderCreate
 	renderCreate(req, res) {
+		if (req.query != "warning") delete req.session.errText;
 		res.render("adminPages/categoryType/addCategoryType", {
 			layout: "adminLayout",
 		});
@@ -63,6 +70,10 @@ class cateTypeController {
 
 	// [GET] /categoryType/renderUpdate
 	renderUpdate(req, res) {
+		if (req.query != "warning") delete req.session.errText;
+		if (jwtHelp.decodeTokenGetPermission(req.cookies.Authorization) === 1) {
+			return res.redirect("back");
+		}
 		CategoryType.findById({ _id: req.params.id })
 			.then((cateType) => {
 				res.render("adminPages/categoryType/categoryTypeUpdate", {
@@ -75,11 +86,12 @@ class cateTypeController {
 	}
 
 	// [GET] /categoryType/getAll
-	getAll(req, res) {
-		CategoryType.find().then((cateTypes) => {
-			cateTypes = mutipleMongooseToObject(cateTypes);
-			res.send(cateTypes);
+	async getAll(req, res) {
+		const listCateType = await CategoryType.find().lean();
+		listCateType.forEach((type) => {
+			type.type = commonHelp.capitalizeFirstLetter(type.type);
 		});
+		res.send(listCateType);
 	}
 
 	/**
@@ -110,10 +122,20 @@ class cateTypeController {
 	 *         description: Error
 	 */
 	// [POST] /categoryType/add
-	create(req, res) {
+	async create(req, res) {
+		if (jwtHelp.decodeTokenGetPermission(req.cookies.Authorization) === 1) {
+			return res.redirect("back");
+		}
 		// req.body.type = req.query.type;
 		const newCategory = req.body;
 		const cate = new CategoryType(newCategory);
+		if (await this.isExitedType(cate.type)) {
+			const backUrl = req.header("Referer") || "/";
+			//throw error for the view...
+			req.session.errText =
+				"This cate type already existed. Please try again.";
+			return res.redirect(backUrl + "?warning");
+		}
 		cate
 			.save()
 			.then(() => {
@@ -178,7 +200,16 @@ class cateTypeController {
 	 *         description: Error
 	 */
 	//[PUT] /categoryType/update/:id
-	update(req, res) {
+	async update(req, res) {
+		if (jwtHelp.decodeTokenGetPermission(req.cookies.Authorization) === 1) {
+			return res.redirect("back");
+		}
+		if (await this.isExitedType(req.body.type)) {
+			const backUrl = req.header("Referer") || "/";
+			//throw error for the view...
+			req.session.errText = "This cate type already existed. Please try again.";
+			return res.redirect(backUrl + "?warning");
+		}
 		CategoryType.updateOne({ _id: req.params.id }, req.body)
 			.then(() => {
 				res.redirect(`/admin/categoryType`);
@@ -218,6 +249,9 @@ class cateTypeController {
 	 */
 	//[DELETE] /categoryType/delete/:id
 	delete(req, res) {
+		if (jwtHelp.decodeTokenGetPermission(req.cookies.Authorization) === 1) {
+			return res.redirect("back");
+		}
 		CategoryType.deleteOne({ _id: req.params.id })
 			.then(() => {
 				Category.deleteMany({ typeId: req.params.id }).then(() => {
@@ -246,6 +280,12 @@ class cateTypeController {
 			.catch((err) => {
 				next(err);
 			});
+	}
+
+	async isExitedType(cateType) {
+		const isExited = await CategoryType.findOne({ type: cateType });
+		if (!isExited) return false;
+		return true;
 	}
 }
 

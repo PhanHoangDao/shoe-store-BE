@@ -1,0 +1,147 @@
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-wrapper-before">
+        </div>
+        <div class="content-header row">
+            <div class="content-header-left col-md-4 col-12 mb-2">
+            <h3 class="content-header-title">Promotional</h3>
+            </div>
+            <div class="content-header-right col-md-8 col-12">
+            <div class="breadcrumbs-top float-md-right">
+                <div class="breadcrumb-wrapper mr-1">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/admin">Home</a>
+                    </li>
+                    <li class="breadcrumb-item active">Promotional By Customer
+                    </li>
+                </ol>
+                </div>
+            </div>
+            </div>
+        </div>
+        <div class="content-body">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title">List of Promotional</h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements" style="top: 10px">
+                                <ul class="list-inline mb-0"> 
+                                    {{#when permission 'eq' 0}}
+                                        <a href="/admin/promotional/add"><button class="btn btn-primary">Add Promotional</button></a>
+                                        <li><a data-action="collapse"><i class="ft-minus"></i></a></li>
+                                        {{!-- <li><a data-action="reload"><i class="ft-rotate-cw"></i></a></li> --}}
+                                        <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                        {{!-- <li><a data-action="close"><i class="ft-x"></i></a></li> --}}
+                                    {{/when}}
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="card-content collapse show">
+                            {{!-- <div class="card-body">
+                                <p class="card-text">Add <code>.table-bordered</code> for borders on all sides of the table and cells.</p>
+                            </div> --}}
+                            <div class="table-responsive">
+                                <table id="promoTable" class="table table-striped table-bordered zero-configuration" style="text-align: center;">
+                                    <thead>
+                                        <tr>
+                                            <th>No</th>
+                                            <th>User Name</th>
+                                            <th>Code</th>
+                                            <th>Discount</th>
+                                            <th>Description</th>
+                                            <th>Start Date</th>
+                                            <th>End Date</th>
+                                            <th>Action</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {{#each promotes}}
+                                        <tr>
+                                            <th scope="row">{{inc @index}}</th>
+                                            <td>{{this.userName}}</td>
+                                            <td>{{this.code}}</td>
+                                            <td>{{this.discount}}</td>
+                                            <td>{{this.description}}</td>
+                                            <td>{{this.startDate}}</td>
+                                            <td>{{this.endDate}}</td>
+                                            {{#when ../permission 'eq' 0}}
+                                                <td><a href="/admin/promotional/update/{{this._id}}"><button class="btn btn-warning">Edit</button></a></td>
+                                                <td>
+                                                    <a data-id="{{this._id}}" data-toggle="modal" data-target="#categoryModal">
+                                                        <button class="btn btn-danger">Delete</button>
+                                                    </a>
+                                                </td>
+                                            {{/when}}
+                                        </tr>
+                                        {{/each}}
+                                    </tbody>
+                                </table>
+                            </div>  
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{!-- alert confirm to delete force--}}
+<div class="modal fade" id="categoryModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Are you want to delete this promotional?</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        Are you sure to delete this promotional? It can't be recovery and no effect after delete.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-danger" id="btn-delete-category">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{!-- form to delete category --}}
+<form name="delete-category-form" method="POST"></form>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var promoTable = $('#promoTable').DataTable({
+            columnDefs: [
+                { targets: [0, 1, 2, 3, 4, 5, 6], orderable: true },
+                { targets: [7, 8], orderable: false }
+            ],
+
+            // Set initial sorting column and direction
+            order: [[0, 'asc']]
+        });
+
+        var promoId;
+
+        // DELETE
+        // form and button delete
+        var formToDelete = document.forms['delete-category-form'];
+        var btnDeleteCategory = document.getElementById('btn-delete-category');
+        var type = document.getElementById('getType');
+
+        // when dialog confirm (clicked button delete) and get data-id
+        $('#categoryModal').on('show.bs.modal', function(event) {
+            var button = $(event.relatedTarget);
+            promoId = button.data('id');
+        });
+        
+        // Click the button confirm to delete force
+        btnDeleteCategory.onclick = function() {
+            formToDelete.action = `/admin/promotional/delete/${promoId}?_method=DELETE`;
+            formToDelete.submit();
+        }
+    });
+</script>

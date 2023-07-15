@@ -9,6 +9,8 @@ const {
 	mongooseToObject,
 } = require("../../utils/mongoose");
 const categoryHelp = require("../../utils/categoryHelp");
+const jwtHelp = require("../../utils/jwtHelp");
+const commonHelp = require("../../utils/commonHelp");
 
 class cateController {
 	/**
@@ -54,14 +56,18 @@ class cateController {
 		try {
 			const catesByType = await Category.find({
 				typeId: req.params.typeId,
-			});
+			}).lean();
 			const type = await CategoryType.findById(req.params.typeId);
+			catesByType.forEach((cate) => {
+				cate.name = commonHelp.capitalizeFirstLetter(cate.name);
+			});
 
 			res.render("adminPages/category/manager", {
-				catesByType: mutipleMongooseToObject(catesByType),
+				catesByType: catesByType,
 				type: mongooseToObject(type),
 				labels: categoryHelp.setUpLabels(type.type),
 				layout: "adminLayout",
+				permission: jwtHelp.decodeTokenGetPermission(req.cookies.Authorization),
 			});
 		} catch (err) {
 			console.log(err);
@@ -120,20 +126,21 @@ class cateController {
 	 */
 	async create(req, res) {
 		try {
-			// // check typeId have exist in category type
-			// const typeIdExist = await CategoryType.findOne({
-			// 	_id: req.params.typeId,
-			// });
-			// if (typeIdExist) {
+			if (req.query != "warning") delete req.session.errText;
+			if (jwtHelp.decodeTokenGetPermission(req.cookies.Authorization) === 1) {
+				return res.redirect("back");
+			}
 			const newCategory = { ...req.body, typeId: req.params.typeId };
 			const cate = new Category(newCategory);
+			if (await this.isExistedCate(cate.name)) {
+				const backUrl = req.header("Referer") || "/";
+				//throw error for the view...
+				req.session.errText =
+					"This category already existed. Please try again.";
+				return res.redirect(backUrl + "?warning");
+			}
 			await cate.save();
 			res.redirect(`/admin/category/${req.params.typeId}`);
-
-			// res.status(200).send({ message: "Success!" });
-			// } else {
-			// 	res.status(400).send({ message: "Invalid input" });
-			// }
 		} catch (err) {
 			console.log(err);
 			// res.status(400).send({ message: "Invalid input" });
@@ -142,6 +149,7 @@ class cateController {
 
 	// [GET] /category/update/:id
 	async renderUpdate(req, res) {
+		if (req.query != "warning") delete req.session.errText;
 		const type = await CategoryType.findById(req.params.typeId);
 		Category.findById({ _id: req.params.cateId })
 			.then((cate) => {
@@ -198,7 +206,16 @@ class cateController {
 	 *         description: Error
 	 */
 	//[PUT] /category/update/:id
-	update(req, res, next) {
+	async update(req, res, next) {
+		if (jwtHelp.decodeTokenGetPermission(req.cookies.Authorization) === 1) {
+			return res.redirect("back");
+		}
+		if (await this.isExistedCate(req.body.name)) {
+			const backUrl = req.header("Referer") || "/";
+			//throw error for the view...
+			req.session.errText = "This category already existed. Please try again.";
+			return res.redirect(backUrl + "?warning");
+		}
 		Category.updateOne({ _id: req.params.cateId }, req.body)
 			.then(() => {
 				res.redirect(`/admin/category/${req.params.typeId}`);
@@ -236,6 +253,9 @@ class cateController {
 	 */
 	//[DELETE] /category/delete/:id
 	delete(req, res) {
+		if (jwtHelp.decodeTokenGetPermission(req.cookies.Authorization) === 1) {
+			return res.redirect("back");
+		}
 		Category.deleteOne({ _id: req.params.id })
 			.then(() => {
 				res.redirect("back");
@@ -426,6 +446,12 @@ class cateController {
 
 		const filterAnd = await Product.find({ _id: { $in: listProId } });
 		return res.status(200).send(filterAnd);
+	}
+
+	async isExistedCate(cate) {
+		const isExited = await Category.findOne({ name: cate });
+		if (!isExited) return false;
+		return true;
 	}
 }
 

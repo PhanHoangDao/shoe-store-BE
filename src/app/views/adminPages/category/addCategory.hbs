@@ -40,6 +40,12 @@
                         <div class="card-content collapse show">
                             {{!-- why have enctype and it's not work --}}
                             <form action="/admin/category/{{type._id}}/add" method="POST" style="margin: 0 20px;">
+                                {{#if errText}}
+                                    <div class="alert alert-warning" role="alert">
+                                        {{errText}}
+                                    </div>
+                                {{/if}}
+                                
                                 <div class="form-group">
                                     <label for="exampleInputEmail1">{{labels.label1}}</label>
                                     <input type="text" class="form-control" name="name" placeholder="Enter category name">

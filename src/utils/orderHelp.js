@@ -4,23 +4,24 @@ const Product = require("../app/models/product.model");
 const Account = require("../app/models/account.model");
 const Category = require("../app/models/category.model");
 const CategoryProduct = require("../app/models/cateProduct.model");
-const { mutipleMongooseToObject, mongooseToObject } = require("mongoose");
+const commonHelp = require("./commonHelp");
 
 class orderHelp {
 	// format order when client check out cart
-	formatOrder(arrayShoeId, arraySize, arrayQuantity, arrayPrice) {
+	formatOrder(arrayShoeId, arraySize, arrayQuantity, arrayPrice, arrayColor) {
 		var output = [];
 		// if order don't have any suborder
 		if (arrayQuantity === undefined) {
 			return;
 		}
 
-		if (arrayQuantity.length === 1) {
+		if (!Array.isArray(arrayQuantity)) {
 			output.push({
 				shoeId: arrayShoeId,
-				size: arraySize,
+				sizeId: arraySize,
 				quantity: arrayQuantity,
 				price: arrayPrice,
+				colorId: arrayColor,
 			});
 			return output;
 		}
@@ -29,9 +30,10 @@ class orderHelp {
 		for (var i = 0; i < arrayQuantity.length; i++) {
 			output.push({
 				shoeId: arrayShoeId[i],
-				size: arraySize[i],
+				sizeId: arraySize[i],
 				quantity: arrayQuantity[i],
 				price: arrayPrice[i],
+				colorId: arrayColor[i],
 			});
 		}
 		return output;
@@ -165,40 +167,41 @@ class orderHelp {
 
 	// decrease amount of Product (situation: add subOrder)
 	async decreaseAmountProduct(newSubOrder) {
-		const category = await Category.findOne({ name: newSubOrder.size });
+		let isNotEnough = false,
+			message;
 
-		const result = await CategoryProduct.findOne({
+		const catePro = await CategoryProduct.findOne({
+			cateId: newSubOrder.colorId,
 			proId: newSubOrder.shoeId,
-			cateId: category._id,
 		});
-		console.log("result", result);
+
+		await Promise.all(
+			catePro?.listSizeByColor?.map(async(size) => {
+				if (size.sizeId === newSubOrder.sizeId) {
+					// not enough quantity
+					if (Number(newSubOrder.quantity) > Number(size.amount)) {
+						isNotEnough = true;
+						const [shoe, size, color] = await Promise.all([
+							Product.findOne({_id: newSubOrder.shoeId}),
+							Category.findOne({_id: newSubOrder.sizeId}),
+							Category.findOne({_id: newSubOrder.colorId})
+						]);
+						message = `Not Enough Quantity with product: ${shoe?.name.toUpperCase()} & size: ${size?.name.toUpperCase()} & color: ${color?.name.toUpperCase()}`;
+						return;
+					}
+					size.amount -= Number(newSubOrder.quantity);
+				}
+			})
+		)
+
+		if (isNotEnough) {
+			return { isError: true, message };
+		}
 
 		await CategoryProduct.updateOne(
-			{ _id: result._id },
-			{ amount: result.amount - newSubOrder.quantity }
+			{ cateId: newSubOrder.colorId, proId: newSubOrder.shoeId },
+			catePro
 		);
-
-		// Product.findOne({ _id: newSubOrder.shoeId }).then((product) => {
-		// 	product.size.forEach((objectSize) => {
-		// 		if (objectSize.size === newSubOrder.size) {
-		// 			objectSize.amount = Number(objectSize.amount);
-		// 			objectSize.amount -= Number(newSubOrder.quantity);
-		// 			amount = objectSize.amount;
-		// 			sizeToSave = objectSize;
-
-		// 			console.log(
-		// 				"🚀 ~ file: orderHelp.js ~ line 174 ~ orderHelp ~ .then ~ objectSize.amount",
-		// 				objectSize.amount
-		// 			);
-
-		// 			this.saveChangeAmountOfProduct(
-		// 				newSubOrder.shoeId,
-		// 				sizeToSave,
-		// 				amount
-		// 			);
-		// 		}
-		// 	});
-		// });
 	}
 
 	// save changes amount of product
@@ -234,19 +237,7 @@ class orderHelp {
 
 	formatDate(date) {
 		const dateFormat = new Date(date);
-		return (
-			dateFormat.getDate() +
-			"/" +
-			(dateFormat.getMonth() + 1) +
-			"/" +
-			dateFormat.getFullYear() +
-			" " +
-			dateFormat.getHours() +
-			":" +
-			dateFormat.getMinutes() +
-			":" +
-			dateFormat.getSeconds()
-		);
+		return dateFormat.toLocaleString();
 	}
 
 	// get next orderId
@@ -260,27 +251,49 @@ class orderHelp {
 	}
 
 	// get order by Status
-	async getOrderByStatus(status, res) {
+	async getOrderByStatus(status, res, messageErr) {
 		try {
 			// must have lean() method to change attribute of object from mongo document
 			// mongo document => js Object
-			var orders = await Order.find({ status: status }).lean();
+			var orders = await Order.find({ status: status })
+				.sort({ createdAt: -1 })
+				.lean();
 			var account;
 			await Promise.all(
 				orders.map(async (order) => {
 					account = await Account.findById(order.customerId);
 					order.customerName = account?.fullname;
-					order.createdAt = this.formatDate(order.createdAt);
+					order.createdAt = commonHelp.formatDateTime(order.createdAt);
 				})
 			);
 
-			res.render("adminPages/order/orders", {
+			return res.render("adminPages/order/orders", {
 				orders,
+				messageErr: messageErr,
 				layout: "adminLayout",
 			});
 		} catch (err) {
 			console.log(err);
 		}
+	}
+
+	// get date range to statistic
+	getDateRage(req) {
+		if (!req.query.dateRange) {
+			const currentDate = new Date();
+			const startDate = currentDate.setHours(0, 0, 0, 0);
+			const endDate = currentDate.setHours(23, 59, 59, 999);
+			return { startDate, endDate };
+		}
+
+		const [startDate, endDate] = req.query.dateRange.split("-");
+		if (startDate === endDate) {
+			startDate = currentDate.setHours(0, 0, 0, 0);
+			endDate = currentDate.setHours(23, 59, 59, 999);
+
+			return { startDate, endDate, dateRange: req.query.dateRange };
+		}
+		return { startDate, endDate, dateRange: req.query.dateRange };
 	}
 }
 

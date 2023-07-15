@@ -33,9 +33,7 @@
                                 <div class="heading-elements">
                                     <ul class="list-inline mb-0">
                                         <li><a data-action="collapse"><i class="ft-minus"></i></a></li>
-                                        <li><a data-action="reload"><i class="ft-rotate-cw"></i></a></li>
                                         <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
-                                        <li><a data-action="close"><i class="ft-x"></i></a></li>
                                     </ul>
                                 </div>
                             </div>
@@ -44,19 +42,19 @@
                                 <div style="margin: 0 20px;">
                                     <div class="form-group">
                                         <label for="exampleInputEmail1">Name</label>
-                                        <input type="text" class="form-control" name="name" placeholder="Enter shoeName">
+                                        <input type="text" class="form-control" name="name" placeholder="Enter shoeName" required>
                                     </div>
                                     
                                     {{!-- Get all CateTyped added and category of this type --}}
                                     {{getAnotherCateAdded listCateType listAnotherCateAdded}}
                                     
-                                    <div class="form-group">
+                                    <div class="form-group" style="display: flex; flex-direction: column"> 
                                         <label for="exampleInputEmail1">Introduce of product</label>
-                                        <input type="text" class="form-control" name="introduce" placeholder="Enter the introduce of this shoe">
+                                        <textarea name="introduce" placeholder="Enter introduce for Shoe" required></textarea>
                                     </div>
-                                    <div class="form-group">
+                                    <div class="form-group" style="display: flex; flex-direction: column">
                                         <label for="exampleInputPassword1">Description</label>
-                                        <input type="text" class="form-control" name="description" placeholder="Enter Description">
+                                        <textarea name="description" placeholder="Enter description for Shoe" required></textarea>
                                     </div>
                                     {{#if errImage}}
                                         <div class="alert alert-warning" role="alert">
@@ -65,7 +63,7 @@
                                     {{/if}}  
                                     <div class="form-group">
                                         <label for="exampleInputPassword1">Gender</label>
-                                        <select name="gender" class="form-control">
+                                        <select name="gender" class="form-control" required>
                                             <option value="male">Male</option>
                                             <option value="female">Female</option>
                                         </select>
@@ -81,9 +79,9 @@
                                 <div class="heading-elements">
                                     <ul class="list-inline mb-0">
                                         <li><a data-action="collapse"><i class="ft-minus"></i></a></li>
-                                        <li><a data-action="reload"><i class="ft-rotate-cw"></i></a></li>
+                                        {{!-- <li><a data-action="reload"><i class="ft-rotate-cw"></i></a></li> --}}
                                         <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
-                                        <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                        {{!-- <li><a data-action="close"><i class="ft-x"></i></a></li> --}}
                                     </ul>
                                 </div>
                             </div>
@@ -93,12 +91,11 @@
                                 <div class="cart-body">
                                     <div style="margin: 0 20px;">
                                         <div class="form-group">
-                                            <select class="select2 form-control" id="color-select" multiple style="margin-bottom: 20px">
+                                            <select class="select2 form-control" id="color-select" multiple style="margin-bottom: 20px" onchange="handleColorSelectedChange(event)">
                                                 {{#each listColor}}
                                                     <option value="{{this.cateId}}">{{this.cateName}}</option>
                                                 {{/each}}
                                             </select>
-                                            <button id="btnRenderSelectedColor" class="btn btn-primary">Render Selected Color</button>
                                         </div>
                                     </div>
                                 </div>
@@ -121,17 +118,17 @@
     let listColor = {{{json listColor}}};
     let listColorSelected = [];
 
-    // list to render color
+    // list to render color component
     let listRenderSelectedColor = document.getElementById("render-color-selected");
 
-    document.getElementById("btnRenderSelectedColor").addEventListener("click", (event) => {
-        event.preventDefault();
-        var selectElement = document.getElementById('color-select');
-        var selectedColors = [], option, elements;
+    // on change color selected
+    function handleColorSelectedChange(event) {
+        let selectElement = document.getElementById('color-select');
+        let selectedColors = [], option, elements;
         
-        for (var i = 0; i < selectElement.options.length; i++) {
+        for (let i = 0; i < selectElement.options.length; i++) {
             option = selectElement.options[i];
-            if (!option.selected) {
+            if (!option.selected || listColorSelected.find((color) => color === option.value)) {
                 continue;
             }
             
@@ -140,16 +137,16 @@
             listColor.forEach(color => {
                 if(color.cateId === option.value) {
                     listRenderSelectedColor.insertAdjacentHTML("beforeend", 
-                        `<div class="card">
+                        `<div class="card" color-id="${color.cateId}">
                             <div class="card-header">
-                                <h4 class="card-title">${color.cateName}</h4>
+                                <h4 class="card-title">${color.cateName.charAt(0).toUpperCase() + color.cateName.slice(1)}</h4>
                                 <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
                                 <div class="heading-elements">
                                     <ul class="list-inline mb-0">
                                         <li><a data-action="collapse"><i class="ft-minus"></i></a></li>
                                         <li><a data-action="reload"><i class="ft-rotate-cw"></i></a></li>
                                         <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
-                                        <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                        <li><a data-action="close" onclick="deleteComponentColor(event, '${color.cateId}')"><i class="ft-x"></i></a></li>
                                     </ul>
                                 </div>
                             </div>
@@ -157,18 +154,22 @@
                             <div class="card-content collapse show" style="margin: 0 20px;">
                                 <div id="imageFields${color.cateName}">                                    
                                     <div class="form-group imageField${color.cateName}">
-                                        <input class="form-check-input" type="checkbox" id="flexCheckChecked" value="0" name="checkBoxImage${color.cateName}" onclick="getArrayImageDelete${color.cateName}(0)">
-                                        <label for="exampleInputPassword1">Images</label>
-                                        <input type="file" class="form-control imageWithColor${color.cateName}" name="image" placeholder="Select image" accept='image/*' value="0" onclick="displayImg${color.cateName}(0)">
+                                        <label for="exampleInputPassword1">Image Avatar</label>
+                                        <input type="file" class="form-control imageWithColor${color.cateName}" name="image" placeholder="Select image" accept='image/*' value="0" onclick="displayImg${color.cateName}(0)" required>
+                                        <img class="imgEdit" name="imageChange${color.cateName}" src="" alt="Images of product" style="width: 25%;max-height: 310px;margin: 0.5% 37.5%; min-height: 105px; min-width: 10%; display: none">
+                                        <input type="hidden" name="avatar${color.cateName}">
+                                    </div>
+                                    <div class="form-group imageField${color.cateName}">
+                                        <label for="exampleInputPassword1">Images Details</label>
+                                        <input type="file" class="form-control imageWithColor${color.cateName}" name="image" id="image" value="1" onclick="displayImg${color.cateName}(1)" multiple required>
                                     </div>
                                 </div>
-                                <button class="btn btn-primary" id="btnAddFieldImage${color.cateName}" type="button">Add field Image</button>
-                                <button class="btn btn-primary" id="btnDeleteFieldImage${color.cateName}" type="button">Delete Image Of Shoe</button>
+
                                 {{!-- Size and price of each size and color --}}
                                 <div class="form-group">
                                     <label for="exampleInputPassword1">Sizes in US/UK (Enter the amount of the shoes)</label>
                                     {{#each listSizeAdded}}
-                                        <div class ="form-check" style="margin-bottom: 14px">
+                                        <div class="form-check" style="margin-bottom: 14px">
                                             <input value="{{this.cateId}}" name="size${color.cateId}" type="hidden">
                                             <label class="form-check-label" for="flexCheckDefault" style="margin-right: 50px; min-width: 30px">
                                                 {{this.cateName}}
@@ -183,39 +184,7 @@
                         </div>`
                     );
 
-                    // add or delete image field of color
-                    var dynamicColor = {};
-                    window["listFieldImage" + color.cateName] = document.getElementById(`imageFields${color.cateName}`);
-                    dynamicColor["btnAddFieldImage" + color.cateName] = document.getElementById(`btnAddFieldImage${color.cateName}`);
-                    dynamicColor["btnDeleteFieldImage" + color.cateName] = document.getElementById(`btnDeleteFieldImage${color.cateName}`);
                     window["imageField" + color.cateName] = document.getElementsByClassName(`imageField${color.cateName}`);
-                    dynamicColor["imageWithColor" + color.cateName] = document.getElementsByClassName(`imageWithColor${color.cateName}`);
-
-                    // delete image of shoes
-                    window["listCheckBoxImage" + color.cateName] = document.getElementsByName(`checkBoxImage${color.cateName}`);
-                    window["arrayImageDelete" + color.cateName] = [];
-
-                    // selected file
-                    window["selectedFile" + color.cateName] = document.getElementsByClassName(`imageWithColor${color.cateName}`);
-
-                    // display Image and store imageName
-                    window["imageName" + color.cateName] = document.getElementsByName(`imageName${color.cateName}`);
-
-                    // custom function
-                    // function get array image delete
-                    const functionName = `getArrayImageDelete${color.cateName}`;
-                    window[functionName] = new Function(`
-                        return function ${functionName}(position) {
-                            window["listCheckBoxImage${color.cateName}"] = document.getElementsByName("checkBoxImage${color.cateName}");
-                            //console.log("test", position, window["listCheckBoxImage${color.cateName}"][position]);
-                            window["listCheckBoxImage${color.cateName}"][position].addEventListener('change', () => {
-                                window["arrayImageDelete${color.cateName}"] = 
-                                    Array.from(window["listCheckBoxImage${color.cateName}"]) // Convert checkboxes to an array to use filter and map.
-                                    .filter(i => i.checked) // Use Array.filter to remove unchecked checkboxes.
-                                    .map(i => i.value).sort(); // Use Array.map to extract only the checkbox values from the array of objects.
-                                //console.log(checkbox["arrayImageDelete${color.cateName}"]);
-                            })
-                        }`)();
 
                     // function to display image when update or add
                     const displayName = `displayImg${color.cateName}`;
@@ -224,32 +193,74 @@
                             window["selectedFile${color.cateName}"] = document.getElementsByClassName("imageWithColor${color.cateName}");
 
                             window["selectedFile${color.cateName}"][position].addEventListener('change', (event) => {
-                                // display new image when have update.
+                                if(position === 0) {
+                                    let srcImage = document.getElementsByName("imageChange${color.cateName}");
+                                    // display new image when have update (avatar).
+                                    srcImage[position].src = URL.createObjectURL(event.target.files[0]);
+                                    srcImage[position].onload = function() {
+                                        URL.revokeObjectURL(srcImage[position].src) // free memory
+                                    }
+                                    srcImage[position].style = "width: 25%;max-height: 310px;margin: 0.5% 37.5%; min-height: 105px; min-width: 10%;";
+                                    // assign value for input avatar
+                                    let inputAvatar = document.getElementsByName("avatar${color.cateName}");
+                                    inputAvatar[0].value = event.target.files[0].name;
+                                    return;
+                                }
+                                
+                                // reset image element 
+                                let elements = document.querySelectorAll(".image-element-${color.cateName}");
+                                elements?.forEach(function(element) {
+                                    element.remove();
+                                });
+                                
+                                // display new image when have update (image detail).
                                 Array.from(event.target.files).forEach((file) => {
-                                    var img = document.createElement('img');
-                                    var input = document.createElement('input');
+                                    let img = document.createElement('img');
+                                    let input = document.createElement('input');
+                                    let div = document.createElement('div');
+
+                                    // CSS for div element image
+                                    div.style="position: relative";
+                                    div.className="image-element-${color.cateName}";
+
+                                    // delete icon 
+                                    let divDeleteIcon = document.createElement('div');
+                                    divDeleteIcon.style = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0; transition: opacity 0.3s ease; cursor: pointer;';
+                                    let trashIcon = document.createElement('i');
+                                    trashIcon.className = 'fa ft-trash';
+                                    trashIcon.style="font-size: 20px; color: white";
+
+                                    // event to delete image element
+                                    trashIcon.addEventListener('click', deleteImage);
+                                    divDeleteIcon.appendChild(trashIcon);
+
+                                    div.appendChild(img);
+                                    div.appendChild(input);
+                                    div.appendChild(divDeleteIcon);
 
                                     // set attribute for tag input
                                     input.setAttribute('type', 'hidden');
                                     input.setAttribute('value', file.name);
                                     // set avatar or list image for shoe
-                                    if(position == 0) {
-                                        input.setAttribute('name', 'avatar${color.cateName}');
-                                        // store file name
-                                        window["imageField${color.cateName}"][position].appendChild(input);
-                                    }
-                                    else {
-                                        input.setAttribute('name', 'imageName${color.cateName}');
-                                        // store file name
-                                        window["imageField${color.cateName}"][position].appendChild(input);
-                                    }
+                                    input.setAttribute('name', 'imageName${color.cateName}');
   
                                     // Set attributes for tag image
                                     img.src = URL.createObjectURL(file);
                                     img.style = "width: 25%;max-height: 310px;margin: 0.5% 37.5%; min-height: 105px; min-width: 10%;";
+
+                                    // event hover
+                                    div.addEventListener('mouseenter', function() {
+                                        divDeleteIcon.style.opacity = '1';
+                                        img.style.opacity = '0.5';
+                                    })
+                                    div.addEventListener('mouseleave', function() {
+                                        divDeleteIcon.style.opacity = '0';
+                                        img.style.opacity = '1';
+                                    })
                                     
                                     // Append the img element to the image container
-                                    window["imageField${color.cateName}"][position].appendChild(img);
+                                    window["imageField${color.cateName}"][position].appendChild(div);
+
                                     // free memory
                                     img.onload = function() {
                                         URL.revokeObjectURL(img.src);
@@ -257,63 +268,144 @@
                                 });
                             }); 
                         }`)();
-
-                    // add field image
-                    dynamicColor["btnAddFieldImage" + color.cateName].addEventListener('click', () => {
-                        const position = dynamicColor["imageWithColor" + color.cateName].length;
-                        window["listFieldImage" + color.cateName].insertAdjacentHTML('beforeend', 
-                        `<div class="form-group imageField${color.cateName}">
-                            <input class="form-check-input" type="checkbox" id="flexCheckChecked" value="${position}" name="checkBoxImage${color.cateName}" onclick="getArrayImageDelete${color.cateName}(${position})">
-                            <label for="exampleInputPassword1">Images</label>
-                            <input type="file" class="form-control imageWithColor${color.cateName}" name="image" id="image" value="${position}" onclick="displayImg${color.cateName}(${position})" multiple>
-                        </div>`
-                        );
-                    });  
-
-                    // delete field image on interface
-                    dynamicColor["btnDeleteFieldImage" + color.cateName].addEventListener('click', () => {
-                        window["selectedFile" + color.cateName] = document.getElementsByClassName(`imageWithColor${color.cateName}`);
-
-                        // get array of input type = file
-                        for(var i = 0; i < window["arrayImageDelete" + color.cateName].length; i++) { 
-                            for(var j = 0; j < window["selectedFile" + color.cateName].length; j++) { 
-                                if(window["arrayImageDelete" + color.cateName][i]===window["selectedFile" + color.cateName][j].defaultValue) {
-                                    window["listFieldImage" + color.cateName].removeChild(window["imageField" + color.cateName][j]);
-                                }
-                            }
-                        }
-                    }); 
                 }
             });
         }
-    });
 
-    var buttonSubmit = document.getElementById("btnAdd");
+        // delete it in list Selected color to render
+        const selectedValues = Array.from(event.target.selectedOptions, option => option.value);
+        listColorSelected.forEach((color) => {
+            if(!selectedValues.includes(color)) {
+                let index = listColorSelected.indexOf(color);
+                listColorSelected.splice(index, 1);
+
+                let elementToDelete = document.querySelector(`[color-id="${color}"]`);
+                if(elementToDelete) {
+                    elementToDelete.remove();
+                }
+            }
+        })
+    }
+
+    let listDeleteImg = [];
+
+    function deleteImage(event) {
+        // image element
+        let imageElement = event.target.parentNode.parentNode;
+        let imgDelete = imageElement.querySelector("input");
+
+        // get list value of delete image.
+        const oldImageInput = imageElement.parentNode.querySelector('input');
+
+        Array.from(oldImageInput.files).forEach((file) => {
+            if(file.name === imgDelete.value) {
+                listDeleteImg.push(file.name);
+            }
+        });
+
+        // remove on interface
+        imageElement.parentNode.removeChild(imageElement);
+    }
+
+    function deleteComponentColor(event, colorId) {
+        let componentColor = event.target.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode;
+        componentColor.parentNode.removeChild(componentColor);
+
+        // delete it in list
+        listColorSelected.splice(colorId, 1);
+
+        // delete it in list selected Color
+        let selectElement = document.getElementsByClassName('select2-selection__choice');
+        let infoColor;
+        for (let i = 0; i < selectElement.length; i++) {
+            infoColor = listColor.find((color) => color.cateName === selectElement[i].title);
+
+            if(infoColor.cateId.toString() === colorId) {
+                selectElement[i].remove();
+                break;
+            }
+        }
+        
+        // unselected from select option component
+        let selectOptions = document.getElementById('color-select');
+
+        for (let i = 0; i < selectOptions.options.length; i++) {
+            if(selectOptions.options[i].value === colorId) {
+                selectOptions.options[i].selected = false;
+                break;
+            }
+        }
+    }
+
+    let buttonSubmit = document.getElementById("btnAdd");
 
     buttonSubmit.addEventListener("click", function(event) {
         event.preventDefault();
+
         buttonSubmit.disabled = true;
 
         const form = document.getElementById("product-add-form");
         const formData = new FormData(form);
 
-        let listInfoWithColor = [];
+        if(formData.get('name') === '' || formData.get('introduce') === '' || formData.get('description') === '') {
+            alert("Please fill out all common information of this shoe");
+            buttonSubmit.disabled = false;
+            return;
+        }
+
+        if(listColorSelected.length === 0) {
+            alert("Please choose color, and fill out all info of this color");
+            buttonSubmit.disabled = false;
+            return;
+        }
+
+        let listInfoWithColor = [], isValid = false, isErr = false, checkAmount, checkPrice;
 
         listColor.forEach((color) => {
             listColorSelected.forEach((colorId) => {
                 if(color.cateId === colorId) {
+                    isValid = false;
                     const avatar = document.getElementsByName(`avatar${color.cateName}`);
                     const images = document.getElementsByName(`imageName${color.cateName}`);
                     const size = document.getElementsByName(`size${color.cateId}`);
                     const amountOfSize = document.getElementsByName(`amountOfSize${color.cateId}`);
                     const price = document.getElementsByName(`price${color.cateId}`);
 
+                    if(avatar[0].value === '') {
+                        alert(`Please choose image avatar for color: ${color.cateName}`);
+                        buttonSubmit.disabled = false;
+                        return;
+                    }
+
+                    if(images.length === 0) {
+                        alert(`Please choose images details for color: ${color.cateName}`);
+                        buttonSubmit.disabled = false;
+                        return;
+                    }
+
+                    // validate size and price of this color
+                    for (let i = 0; i < amountOfSize.length; i++) {
+                        checkAmount = parseInt(amountOfSize[i].value);
+                        checkPrice = parseInt(price[i].value);
+
+                        // Check if amount and price are filled and greater than 0
+                        if (checkAmount > 0 && checkPrice > 0) {
+                            isValid = true;
+                            break;
+                        }
+                    }
+
+                    if (!isValid) {
+                        alert(`Please fill in at least one amount and price of color: ${color.cateName.toUpperCase()}, and make sure they are greater than 0.`);
+                        isErr = true;
+                    }
+
                     const length = size.length;
                     let listSize = [], listImage = [];
 
                     images.forEach((image) => {
                         listImage.push(image.value);
-                    })
+                    });
 
                     for(let i = 0; i < length; i++) {
                         if(amountOfSize[i].value > 0 && price[i].value > 0) {
@@ -325,8 +417,6 @@
                         }
                     }
 
-                    // validate in here
-
                     listInfoWithColor.push({
                         colorId: color.cateId,
                         listImg: listImage,
@@ -337,6 +427,13 @@
             });
         });
 
+        if(isErr) {
+            buttonSubmit.disabled = false;
+            return;
+        }
+
+        // image list info and delete Image
+        formData.append("listDeleteImg", JSON.stringify(listDeleteImg));
         formData.append("listImgWithColor", JSON.stringify(listInfoWithColor));
 
         fetch("/admin/product/save", {

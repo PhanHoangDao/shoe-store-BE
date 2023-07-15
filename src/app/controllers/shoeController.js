@@ -1,6 +1,9 @@
 const _ = require("lodash");
+const fs = require("fs");
 
 const Product = require("../models/product.model");
+const Order = require("../models/order.model");
+const OrderDetail = require("../models/orderDetail.model");
 const Category = require("../models/category.model");
 const CategoryProduct = require("../models/cateProduct.model");
 const CateType = require("../models/categoryType.model");
@@ -10,9 +13,11 @@ const {
 } = require("../../utils/mongoose");
 const categoryHelp = require("../../utils/categoryHelp");
 const productHelp = require("../../utils/productHelp");
+const jwtHelp = require("../../utils/jwtHelp");
 const imageHelp = require("../../utils/imageHelp");
 const upload = require("../middlewares/upload.mdw");
 const algoliaService = require("../../services/algoliaService");
+const commonHelp = require("../../utils/commonHelp");
 
 class shoeController {
 	/**
@@ -62,14 +67,43 @@ class shoeController {
 		listProduct = await this.formatData(listProduct);
 		algoliaService.updateData(listProduct);
 
+		const searchQuery = req.query.search || "";
+		const filteredItems = listProduct.filter((item) =>
+			item.name.toLowerCase().includes(searchQuery.toLowerCase())
+		);
+
+		const limit = 6;
+		const page = parseInt(req.query.page) || 1;
+
+		const totalPages = Math.ceil(filteredItems.length / limit);
+
+		const prevPage = page > 1 ? page - 1 : null;
+		const nextPage = page < totalPages ? page + 1 : null;
+
+		const startIndex = (page - 1) * limit;
+		const endIndex = startIndex + limit;
+
+		const pageItems = filteredItems.slice(startIndex, endIndex);
+		const pages = Array.from({ length: totalPages }, (_, index) => index + 1);
+
 		res.render("adminPages/product/manager", {
-			shoes: listProduct,
+			shoes: pageItems,
+			hasPrevPage: prevPage !== null,
+			prevPage,
+			pages,
+			currentPage: page,
+			hasNextPage: nextPage !== null,
+			nextPage,
 			layout: "adminLayout",
+			searchQuery,
 		});
 	}
 
 	// [GET] /product/add
 	renderCreate(req, res) {
+		if (jwtHelp.decodeTokenGetPermission(req.cookies.Authorization) === 1) {
+			return res.redirect("back");
+		}
 		if (req.query != "warning") delete req.session.errImage;
 		res.render("adminPages/product/productAdd", { layout: "adminLayout" });
 	}
@@ -146,6 +180,9 @@ class shoeController {
 	// [POST] /admin/product/create
 	async create(req, res) {
 		try {
+			if (jwtHelp.decodeTokenGetPermission(req.cookies.Authorization) === 1) {
+				return res.redirect("back");
+			}
 			upload("image")(req, res, async function (err) {
 				if (err) {
 					// url for redirect back
@@ -158,6 +195,13 @@ class shoeController {
 				const formData = req.body;
 				formData.cateIds = formData.cateIds.filter((cate) => cate.length > 0);
 				formData.listImgWithColor = JSON.parse(formData.listImgWithColor);
+				formData.listDeleteImg = JSON.parse(formData.listDeleteImg);
+				// delete image
+				if (formData.listDeleteImg.length > 0) {
+					imageHelp.deleteImages(formData.listDeleteImg);
+				}
+
+				// create data
 				const product = new Product(formData);
 				const newProduct = await product.save();
 				await Promise.all([
@@ -169,19 +213,17 @@ class shoeController {
 						await cateProduct.save();
 					}),
 					formData.listImgWithColor.map(async (color) => {
-						if (color.listSize.length > 0) {
-							const colorProduct = new CategoryProduct({
-								proId: newProduct._id,
-								cateId: color.colorId,
-								avatar: color.avatar,
-								listImgByColor: color.listImg,
-								listSizeByColor: color.listSize,
-							});
-							await colorProduct.save();
-						}
+						const colorProduct = new CategoryProduct({
+							proId: newProduct._id,
+							cateId: color.colorId,
+							avatar: color.avatar,
+							listImgByColor: color.listImg,
+							listSizeByColor: color.listSize,
+						});
+						await colorProduct.save();
 					}),
 				]);
-				res.redirect("admin/product");
+				res.status(200).send("success");
 			});
 		} catch (err) {
 			console.log(err);
@@ -192,22 +234,30 @@ class shoeController {
 	// [GET] /product/update/:id
 	// optimize code in here
 	async renderUpdate(req, res, next) {
+		if (jwtHelp.decodeTokenGetPermission(req.cookies.Authorization) === 1) {
+			return res.redirect("back");
+		}
 		// have err in process update image
 		if (req.query != "warning") delete req.session.errImage;
 
 		// get all Cate of product
-		const cateIdsProduct = await CategoryProduct.find({ proId: req.params.id });
+		const listCateShoe = await CategoryProduct.find({
+			proId: req.params.id,
+		}).lean();
+
 		var arrCateId = [];
-		cateIdsProduct.forEach((cateId) => {
+		listCateShoe.forEach((cateId) => {
 			arrCateId.push(cateId.cateId);
 		});
 
-		// get category of Product from CateIdsProduct
+		// get category of Product from listCateShoe
 		const resultCate = await Category.find({
 			_id: {
 				$in: arrCateId,
 			},
 		});
+
+		// console.log("resultCate: ", resultCate);
 
 		// group Cate Type Id and extract cate key
 		const groupByCateTypeId = _(resultCate)
@@ -222,38 +272,40 @@ class shoeController {
 			})
 			.value();
 
+		// console.log("groupByCateTypeId: ", groupByCateTypeId);
+
 		// get size of shoe
-		var listSize = [],
-			listSizeAdded = res.locals.listSizeAdded,
+		let listColorInfo = [],
 			listAnotherCate = [],
-			amountOfSize;
+			colorCate;
 
-		await Promise.all(
-			groupByCateTypeId.map((item) => {
-				if (item.cate.length > 1) {
-					listSizeAdded.forEach(async (cateSizeAdded) => {
-						//get amount of size of shoe
-						amountOfSize = await CategoryProduct.findOne({
-							cateId: cateSizeAdded.cateId.toString(),
-							proId: req.params.id,
-						});
+		// get another cate such as style, brand, ...
+		groupByCateTypeId.map((item) => {
+			if (item.cate.length === 1) {
+				item.cate.forEach((anotherCate) => {
+					listAnotherCate.push({
+						typeId: anotherCate.typeId,
+						cateId: anotherCate._id.toString(),
+					});
+				});
+			}
+		});
 
-						listSize.push({
-							sizeId: cateSizeAdded.cateId.toString(),
-							size: cateSizeAdded.cateName,
-							amount: amountOfSize?.amount ? amountOfSize.amount : 0,
-						});
-					});
-				} else {
-					item.cate.forEach((anotherCate) => {
-						listAnotherCate.push({
-							typeId: anotherCate.typeId,
-							cateId: anotherCate._id.toString(),
-						});
-					});
+		// get list info of color of shoe such as listSize and listImg
+		listCateShoe.forEach((catePro) => {
+			if (catePro?.listImgByColor || catePro.listSizeByColor) {
+				colorCate = resultCate.find(
+					(cate) => cate._id.toString() === catePro.cateId
+				);
+				if (colorCate) {
+					catePro.colorName = commonHelp.capitalizeFirstLetter(colorCate.name);
 				}
-			})
-		);
+				listColorInfo.push(catePro);
+			}
+		});
+
+		// console.log("Color", listColorInfo);
+
 		// console.log("List Cate of Product", listAnotherCate);
 		// display product need update to view...
 		Product.findOne({ _id: req.params.id })
@@ -263,7 +315,7 @@ class shoeController {
 					result,
 					// extract key[position] is key of object groupByCateTypeId to get name of this key(typeId)
 					listAnotherCate: listAnotherCate,
-					listSize: listSize,
+					listColorInfo: listColorInfo,
 					layout: "adminLayout",
 				});
 			})
@@ -272,6 +324,9 @@ class shoeController {
 
 	// [PUT] /product/saveUpdate/:id
 	update(req, res, next) {
+		if (jwtHelp.decodeTokenGetPermission(req.cookies.Authorization) === 1) {
+			return res.redirect("back");
+		}
 		upload("image")(req, res, async function (err) {
 			if (err) {
 				// url for redirect back
@@ -280,7 +335,7 @@ class shoeController {
 				req.session.errImage = err;
 				return res.redirect(backUrl + "?warning");
 			}
-
+			console.log(req.body);
 			// update category for Product
 			// get all Cate of product
 			const cateIdsProduct = await CategoryProduct.find({
@@ -311,14 +366,20 @@ class shoeController {
 				})
 				.value();
 
+			console.log(groupByCateTypeId);
+			console.log(res.locals.listAnotherCateAdded);
+
 			const listAnotherCateAdded = res.locals.listAnotherCateAdded;
 			let arrayIdUpdate = req.body.cateIds;
-			let listSizeUpdate = productHelp.setAmountForSize(
-				req.body.sizeId,
-				req.body.amountOfSize
-			);
+			let listInfoColor = JSON.parse(req.body.listImgWithColor),
+				listImgDelete = JSON.parse(req.body.listDeleteImg);
 
-			// update category for Product(create new or update)
+			// delete image
+			if (listImgDelete.length > 0) {
+				imageHelp.deleteImages(listImgDelete);
+			}
+
+			// update category for Product(update)
 			await Promise.all([
 				req.body.cateIds.map((idUpdate) => {
 					// update new cate
@@ -332,8 +393,6 @@ class shoeController {
 									(cate) =>
 										cate.cateId.toString() === oldCate.cate[0]._id.toString()
 								);
-							// Have a one case not have check in here insert a new cate for product ....
-
 							if (existedCate) {
 								arrayIdUpdate = arrayIdUpdate.filter(
 									(newId) => newId !== idUpdate
@@ -350,8 +409,24 @@ class shoeController {
 						});
 					}
 				}),
+
+				// update or create color info for this shoe
+				listInfoColor.map(async (color) => {
+					await CategoryProduct.findOneAndUpdate(
+						{ proId: req.params.id, cateId: color.colorId },
+						{
+							$set: {
+								listImgByColor: color.listImg,
+								listSizeByColor: color.listSize,
+								avatar: color.avatar,
+							},
+						},
+						{ upsert: true }
+					);
+				}),
 			]);
 
+			// add new Cate
 			await Promise.all([
 				arrayIdUpdate.forEach((newCate) => {
 					for (let typeId in listAnotherCateAdded) {
@@ -366,22 +441,14 @@ class shoeController {
 						});
 					}
 				}),
-				listSizeUpdate.forEach(async (size) => {
-					await CategoryProduct.findOneAndUpdate(
-						{ proId: req.params.id, cateId: size.sizeId },
-						{ amount: size.amount }
-					);
-				}),
 			]);
 
 			// get information of product and update product
 			Product.findOne({ _id: req.params.id })
 				.then((product) => {
 					product = mongooseToObject(product);
-					req.body.arrayImage = imageHelp.handleImageUpdate(req, product);
-					// console.log("Req.body", req.body);
 					Product.updateOne({ _id: req.params.id }, req.body).then(() => {
-						res.redirect("/admin/product");
+						res.status(200).send("success update");
 					});
 				})
 				.catch((err) => {
@@ -392,9 +459,24 @@ class shoeController {
 
 	// [DELETE] /product/delete/:id
 	async delete(req, res) {
+		if (jwtHelp.decodeTokenGetPermission(req.cookies.Authorization) === 1) {
+			return res.redirect("back");
+		}
+
+		const listCatePro = await CategoryProduct.find({
+			proId: req.params.id,
+		}).lean();
+
+		// delete image of this shoe
+		listCatePro.forEach((catePro) => {
+			if (catePro.listImgByColor || catePro.listSizeByColor) {
+				imageHelp.deleteImages(catePro.listImgByColor);
+			}
+		});
+
+		await CategoryProduct.deleteMany({ proId: req.params.id });
 		await Product.deleteOne({ _id: req.params.id });
 		algoliaService.deleteData([req.params.id]);
-		//also delete category of product check in here
 		res.redirect("/admin/product");
 	}
 
@@ -458,9 +540,6 @@ class shoeController {
 
 			listProduct = await this.formatData(listProduct);
 
-			// syncData with algolia
-			algoliaService.updateData(listProduct);
-
 			res.json(listProduct);
 		} catch (err) {
 			console.error(err);
@@ -474,13 +553,15 @@ class shoeController {
 	 *   get:
 	 *     summary: Details of products.
 	 *     tags: [Products]
+	 *     security:
+	 *        - bearerAuth: []
 	 *     parameters:
 	 *        - in: path
 	 *          name: id
 	 *          type: string
 	 *          required: true
 	 *          description: shoe ID of the shoe to get.
-	 *          example: 6380e790ad8a239b8c5166a2
+	 *          example: 645611d43097195146419e7b
 	 *     responses:
 	 *       201:
 	 *         content:
@@ -515,52 +596,324 @@ class shoeController {
 	 *         description: Get item failed
 	 */
 	async productDetail(req, res) {
-		const listCatePro = await CategoryProduct.find({ proId: req.params.id });
-		let listCateId = [],
-			listAnotherCate = [],
-			listInfoByColor = [];
-		listCatePro.forEach((catePro) => {
-			if (catePro?.listImgByColor || catePro.listSizeByColor) {
-				listInfoByColor.push({
-					id: catePro.cateId,
-					images: catePro.listImgByColor,
-					sizes: catePro.listSizeByColor,
-					avatar: catePro.avatar,
-				});
-			} else {
-				listCateId.push(catePro.cateId);
-			}
-		});
+		try {
+			// case 1: Not Rate, add new comment
+			const isRate = await this.isValidRate(req);
 
-		const listCate = await Category.find({ _id: { $in: listCateId } });
-		listCate.forEach((cate) => {
-			listAnotherCate.push(cate.name);
-		});
+			// case 2: Rated and edit comment
+			const isEdit = await this.isValidEdit(req);
 
-		let sizeName;
-		// get size of color
-		await Promise.all(
-			listInfoByColor.map(async (color) => {
-				await Promise.all(
-					color.sizes.map(async (size) => {
-						sizeName = await Category.findOne({ _id: size.sizeId });
-						size.sizeName = sizeName.name;
-					})
-				);
-			})
-		);
+			const listCatePro = await CategoryProduct.find({ proId: req.params.id });
+			let listCateId = [],
+				listAnotherCate = [],
+				listInfoByColor = [];
 
-		Product.findOne({ _id: req.params.id })
-			.then((shoe) => {
-				shoe = mongooseToObject(shoe);
-				shoe.color = listInfoByColor; // TODO: Have a bugs in here
-				shoe.listAnotherCate = listAnotherCate;
-				res.json(shoe);
-			})
-			.catch((err) => {
-				console.log(err);
-				res.status(400);
+			let colorName, listSize = [];
+			await Promise.all(
+				listCatePro.map(async (catePro) => {
+					if (catePro?.listImgByColor || catePro.listSizeByColor) {
+						colorName = await Category.findOne({ _id: catePro.cateId });
+						listSize = [];
+						catePro.listSizeByColor.forEach((size) => {
+							if(size.amount > 0) {
+								listSize.push(size);
+							}
+						});
+						console.log("List Size", listSize);
+						listInfoByColor.push({
+							id: catePro.cateId,
+							images: catePro.listImgByColor,
+							sizes: listSize,
+							avatar: catePro.avatar,
+							colorName: commonHelp.capitalizeFirstLetter(colorName.name),
+						});
+					} else {
+						listCateId.push(catePro.cateId);
+					}
+				})
+			);
+
+			const listCate = await Category.find({ _id: { $in: listCateId } });
+			listCate.forEach((cate) => {
+				listAnotherCate.push(cate.name);
 			});
+
+			let sizeName;
+			// get size of color
+			await Promise.all(
+				listInfoByColor.map(async (color) => {
+					await Promise.all(
+						color.sizes.map(async (size) => {
+							sizeName = await Category.findOne({ _id: size.sizeId });
+							size.sizeName = sizeName.name;
+						})
+					);
+				})
+			);
+
+			// sorted by size
+			listInfoByColor = productHelp.sortedBySize(listInfoByColor);
+
+			const product = await Product.findOne({ _id: req.params.id }).lean();
+			product.color = listInfoByColor; // TODO: Have a bugs in here
+			product.listAnotherCate = listAnotherCate;
+
+			const resultRate = await productHelp.handleRating(
+				product.commentAndRate,
+				isRate?.userId
+			);
+			product.rateScore = resultRate.averageScore;
+			product.listUserComment = resultRate.listUserComment;
+
+			product.isCommentAndRate = isRate.isValid;
+			product.isEditComment = isEdit.isValid;
+
+			res.status(200).send(product);
+		} catch (err) {
+			console.error(err);
+			res.status(200).send(err);
+		}
+	}
+
+	/**
+	 * @swagger
+	 * /customer/commentAndRate/{orderId}:
+	 *   post:
+	 *     summary: Comment for products.
+	 *     tags: [Customer Service]
+	 *     security:
+	 *        - bearerAuth: []
+	 *     parameters:
+	 *        - in: path
+	 *          name: orderId
+	 *          type: String
+	 *          required: true
+	 *          description: Order ID to rate.
+	 *          example: 18
+	 *     requestBody:
+	 *       required: true
+	 *       content:
+	 *         application/json:
+	 *           schema:
+	 *             type: object
+	 *             properties:
+	 *                listRate:
+	 *                  type: array
+	 *                  description: Rating for product.
+	 *                  example: [{"comment": "Good shoe for running", "rating": "5", "shoeId": "645611d43097195146419e7b"}, {"comment": "Good shoe for freestyle", "rating": "5", "shoeId": "64560f4b3097195146419e23"}]
+	 *     responses:
+	 *       201:
+	 *         content:
+	 *           application/json:
+	 *             schema:
+	 *               type: object
+	 *               properties:
+	 *                  message:
+	 *                    type: string
+	 *                    example: Comment success
+	 *                  status:
+	 *                    type: boolean
+	 *                    example: true
+	 *       400:
+	 *         description: Comment failed
+	 */
+	async commentAndRate(req, res) {
+		try {
+			const listRate = req.body.listRate;
+
+			const result = await this.isValidRate(req);
+
+			if (!result.isValid) {
+				return res
+					.status(200)
+					.send({ message: "Your order isn't valid to rate or you rated" });
+			}
+
+			const orderDetails = await OrderDetail.find({
+				orderDetailId: result.order._id,
+			}).lean();
+
+			let existComment,
+				shoeIdValid = false;
+			await Promise.all(
+				orderDetails.map(async (orderDetail) => {
+					await Promise.all(
+						listRate.map(async (rate) => {
+							if (rate.shoeId === orderDetail.shoeId) {
+								const product = await Product.findOne({
+									_id: rate.shoeId,
+								});
+
+								existComment = product.commentAndRate.find(
+									(item) => item.userId === result.userId
+								);
+								if (existComment) {
+									product.commentAndRate.forEach((item) => {
+										if (item.userId === result.userId) {
+											item.comment = rate.comment;
+											item.rating = Number(rate.rating);
+											item.date = commonHelp.formatDateNow();
+										}
+									});
+								} else {
+									product.commentAndRate.push({
+										userId: result.userId,
+										comment: rate.comment,
+										rating: Number(rate.rating),
+										date: commonHelp.formatDateNow(),
+									});
+								}
+								shoeIdValid = true;
+
+								let updateProduct = await Product.findOneAndUpdate(
+									{ _id: rate.shoeId },
+									{ commentAndRate: product.commentAndRate },
+									{ new: true }
+								).lean();
+
+								updateProduct = [updateProduct];
+
+								const resultFormat = await this.formatData(updateProduct);
+								algoliaService.updateData(resultFormat);
+							}
+						})
+					);
+				})
+			);
+
+			if (!shoeIdValid) {
+				return res.status(200).send({ message: "Invalid shoe Id to rate" });
+			}
+
+			await Order.updateOne({ _id: result.order._id }, { isRated: true });
+
+			return res
+				.status(200)
+				.send({ message: "Comment Saved Success", status: true });
+		} catch (err) {
+			console.log(err);
+			res.status(200).send({ message: err });
+		}
+	}
+
+	/**
+	 * @swagger
+	 * /customer/editComment/{id}:
+	 *   put:
+	 *     summary: Edit Comment for products.
+	 *     tags: [Customer Service]
+	 *     security:
+	 *        - bearerAuth: []
+	 *     parameters:
+	 *        - in: path
+	 *          name: id
+	 *          type: string
+	 *          required: true
+	 *          description: shoe ID to comment.
+	 *          example: 645611d43097195146419e7b
+	 *     requestBody:
+	 *       required: true
+	 *       content:
+	 *         application/json:
+	 *           schema:
+	 *             type: object
+	 *             properties:
+	 *                rating:
+	 *                  type: Number
+	 *                  description: Rating for product.
+	 *                  example: 5
+	 *                comment:
+	 *                  type: String
+	 *                  description: Comment for product.
+	 *                  example: Good shoe for sport
+	 *     responses:
+	 *       201:
+	 *         content:
+	 *           application/json:
+	 *             schema:
+	 *               type: object
+	 *               properties:
+	 *                  message:
+	 *                    type: string
+	 *                    example: Edit Comment success
+	 *                  status:
+	 *                    type: boolean
+	 *                    example: true
+	 *       400:
+	 *         description: Comment failed
+	 */
+	async editCommentAndRate(req, res) {
+		try {
+			const result = await this.isValidEdit(req);
+
+			if (!result.isValid || !req.body.comment || !req.body.rating) {
+				return res.status(200).send({ message: "Invalid to edit comment." });
+			}
+
+			result.product.commentAndRate.forEach((rate) => {
+				if (rate.userId === result.userId) {
+					rate.comment = req.body.comment;
+					rate.rating = Number(req.body.rating);
+					rate.date = commonHelp.formatDateNow();
+				}
+			});
+
+			await Product.updateOne(
+				{ _id: req.params.id },
+				{ commentAndRate: result.product.commentAndRate }
+			);
+
+			res.status(200).send({ message: "Comment updated.", status: true });
+		} catch (err) {
+			console.log(err);
+			res.status(200).send(err);
+		}
+	}
+
+	/**
+	 * @swagger
+	 * /customer/getRate/{id}:
+	 *   get:
+	 *     summary: Get Rate for products.
+	 *     tags: [Customer Service]
+	 *     security:
+	 *        - bearerAuth: []
+	 *     parameters:
+	 *        - in: path
+	 *          name: id
+	 *          type: string
+	 *          required: true
+	 *          description: shoe ID to get.
+	 *          example: 645611d43097195146419e7b
+	 *     responses:
+	 *       201:
+	 *         content:
+	 *           application/json:
+	 *             schema:
+	 *               type: object
+	 *               properties:
+	 *                  rate:
+	 *                    type: number
+	 *                    example: 5
+	 *                  comment:
+	 *                    type: string
+	 *                    example: Comment of product
+	 *       400:
+	 *         description: failed
+	 */
+	async getRate(req, res) {
+		try {
+			const result = await this.isValidEdit(req);
+
+			if (!result.isValid) {
+				return res.status(200).send({ message: "Empty comment" });
+			}
+
+			res.status(200).send(result.existComment);
+		} catch (err) {
+			console.log(err);
+			res.status(200).send({ message: "Invalid Input" });
+		}
 	}
 
 	// display product in shoe By Gender
@@ -601,6 +954,14 @@ class shoeController {
 				// objectID for algolia
 				product.objectID = product._id;
 
+				// rating score
+				const totalScore = product?.commentAndRate?.reduce(
+					(sum, { rating }) => sum + rating,
+					0
+				);
+				product.rateScore =
+					Number(totalScore) / Number(product?.commentAndRate?.length) || 0;
+
 				let listCateId = [],
 					listCatePro = [],
 					maxPrice = 100000,
@@ -637,13 +998,78 @@ class shoeController {
 
 					groupByTypeId[typeId].forEach((cate) => {
 						product[typeName.type] = product[typeName.type] || [];
-						product[typeName.type].push(cate.name);
+						product[typeName.type].push(commonHelp.capitalizeFirstLetter(cate.name));
 					});
 				}
 			})
 		);
 
 		return listProduct;
+	}
+
+	async isValidRate(req) {
+		// check user checkout and complete order
+		const userId = jwtHelp.decodeTokenGetUserId(
+			req?.headers?.authorization?.split(" ")[1]
+		);
+
+		let order,
+			isEditComment = false;
+		if (req.params.orderId) {
+			order = await Order.findOne({
+				customerId: userId,
+				status: 3,
+				_id: Number(req.params.orderId),
+			});
+		}
+
+		// product detail check permission add comment
+		if (req.params.id) {
+			const orders = await Order.find({
+				customerId: userId,
+				status: 3,
+			});
+
+			await Promise.all(
+				orders.map(async (item) => {
+					const orderDetails = await OrderDetail.find({
+						orderDetailId: item._id,
+					}).lean();
+
+					if (orderDetails.find((detail) => detail.shoeId === req.params.id)) {
+						isEditComment = true;
+					}
+				})
+			);
+		}
+
+		if (isEditComment) {
+			return { isValid: true, userId };
+		}
+
+		if (userId && order) {
+			return { order, userId, isValid: true };
+		}
+
+		return { isValid: false };
+	}
+
+	async isValidEdit(req) {
+		const userId = jwtHelp.decodeTokenGetUserId(
+			req?.headers?.authorization?.split(" ")[1]
+		);
+
+		const product = await Product.findOne({ _id: req.params.id });
+
+		const existComment = product?.commentAndRate.find(
+			(rate) => rate.userId === userId
+		);
+
+		if (existComment) {
+			return { isValid: true, product, userId: userId, existComment };
+		}
+
+		return { isValid: false };
 	}
 }
 

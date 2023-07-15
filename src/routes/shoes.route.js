@@ -15,7 +15,7 @@ router.get(
 router.post("/shoeByGender", shoeController.displayShoeByGender);
 
 // display shoes by id
-router.get("/:id", shoeController.productDetail);
+router.get("/:id", shoeController.productDetail.bind(shoeController));
 
 //exports
 module.exports = router;

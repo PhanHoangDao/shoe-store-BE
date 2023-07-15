@@ -1,16 +1,29 @@
 <div class="main-menu menu-fixed menu-light menu-accordion    menu-shadow " data-scroll-to-active="true" data-img="/admin/images/backgrounds/02.jpg">
     <div class="navbar-header">
-    <ul class="nav navbar-nav flex-row">       
-        <li class="nav-item mr-auto"><a class="navbar-brand" href="index.html"><img class="brand-logo" alt="Chameleon admin logo" src="/admin/images/logo/logo.png"/>
-            <h3 class="brand-text">Shoe Store</h3></a></li>
-        <li class="nav-item d-md-none"><a class="nav-link close-navbar"><i class="ft-x"></i></a></li>
+    <ul class="nav navbar-nav flex-row" style="justify-content: center;">       
+        <li class="nav-item">
+            <a class="navbar-brand" href="/admin"><img class="brand-logo" alt="Shoe store admin logo" src="/admin/images/logo/logo.jpg" style="min-width: 124px;"/>
+            </a>
+        </li>
+        <li class="nav-item d-md-none" style="margin-left: 80px"><a class="nav-link close-navbar"><i class="ft-x"></i></a></li>
     </ul>
     </div>
     <div class="main-menu-content">
     <ul class="navigation navigation-main" id="main-menu-navigation" data-menu="menu-navigation">
-        {{!-- <li class="active"><a href="index.html"><i class="ft-home"></i><span class="menu-title" data-i18n="">Dashboard</span></a>
-        </li> --}}
-        <li class=" nav-item"><a href="/admin/accounts"><i class="ft-layers"></i><span class="menu-title" data-i18n="">Accounts</span></a>
+        <li class=""><a href="/admin"><i class="ft-home"></i><span class="menu-title" data-i18n="">Dashboard</span></a>
+        </li>
+        <li class=" nav-item">
+            <a>
+                <i class="ft-layers"></i><span class="menu-title" data-i18n="">Accounts</span>
+            </a>
+            <ul class="menu-content">
+                <li><a class="menu-item" href="/admin/accounts">Employee</a>
+                </li>
+                {{!-- {{#when permission 'eq' 0}} --}}
+                    <li><a class="menu-item" href="/admin/accountsByCustomer">Customer</a>
+                    </li>
+                {{!-- {{/when}} --}}
+            </ul>
         </li>
         <li class=" nav-item"><a href="/admin/categoryType"><i class="ft-layers"></i><span class="menu-title" data-i18n="">Category type</span></a>
         </li>
@@ -27,11 +40,21 @@
             <ul class="menu-content">
                 <li><a class="menu-item" href="/admin/product">Product Manager</a>
                 </li>
-                <li><a class="menu-item" href="/admin/product/add">Add Product</a>
-                </li>
+                {{!-- {{#when permission 'eq' 0}} --}}
+                    <li><a class="menu-item" href="/admin/product/add">Add Product</a>
+                    </li>
+                {{!-- {{/when}} --}}
             </ul>
         </li>
-        <li class="nav-item"><a href="/admin/promotional"><i class="ft-droplet"></i><span class="menu-title" data-i18n="">Promotional</span></a>
+        <li class="nav-item"><a><i class="ft-droplet"></i><span class="menu-title" data-i18n="">Promotional</span></a>
+            <ul class="menu-content">
+                <li><a class="menu-item" href="/admin/promotional">Promo By Event</a>
+                </li>
+                {{!-- {{#when permission 'eq' 0}} --}}
+                    <li><a class="menu-item" href="/admin/promotionalByCustomer">Promo By Customer</a>
+                    </li>
+                {{!-- {{/when}} --}}
+            </ul>
         </li>
         <li class=" nav-item"><a><i class="ft-credit-card"></i><span class="menu-title" data-i18n="">Order</span></a>
             <ul class="menu-content">

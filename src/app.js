@@ -60,42 +60,54 @@ app.engine(
 			) => {
 				var output = "",
 					nameOfType,
-					flag = 0;
+					flag = 0,
+					cateAssigned;
+
+				// console.log("listCateAdded", listCateAdded);
+				// console.log("listCateOfShoe", listCateOfShoe);
+				// console.log("listCateTypeAdded", listCateTypeAdded);
+
 				for (typeIdAdded in listCateAdded) {
-					listCateOfShoe.forEach((cate) => {
-						if (cate.typeId === typeIdAdded) {
-							// get cate type added
-							for (cateType in listCateTypeAdded) {
-								if (cateType === cate.typeId) {
-									nameOfType = listCateTypeAdded[cateType][0].typeName;
-									// first letter to upperCase
-									output += `<div class="form-group">
-											<label for="exampleInputEmail1">${
-												nameOfType.charAt(0).toUpperCase() + nameOfType.slice(1)
-											} of product</label>
-											<select name="cateIds" class="form-control">`;
-									flag = 1;
-									break;
-								}
+					cateAssigned = listCateOfShoe.find(
+						(cate) => cate.typeId === typeIdAdded
+					);
+					if (cateAssigned) {
+						for (cateType in listCateTypeAdded) {
+							if (cateType === cateAssigned.typeId) {
+								nameOfType = listCateTypeAdded[cateType][0].typeName;
+								// first letter to upperCase
+								output += `<div class="form-group">
+										<label for="exampleInputEmail1">${
+											nameOfType.charAt(0).toUpperCase() + nameOfType.slice(1)
+										} of product</label>
+										<select name="cateIds" class="form-control">`;
+								flag = 1;
+								break;
 							}
-
-							// get cate selected of product
-							listCateAdded[typeIdAdded].forEach((cateAdded) => {
-								if (cateAdded.cateId.toString() === cate.cateId) {
-									output += `<option value="${cateAdded.cateId}" selected>${cateAdded.cateName}</option>`;
-								} else {
-									output += `<option value="${cateAdded.cateId}">${cateAdded.cateName}</option>`;
-								}
-							});
-
-							output += `</select>
-								</div>
-							`;
-						} else {
-							// CateType product not assigned
-							flag = 0;
 						}
-					});
+
+						// get cate selected of product
+						listCateAdded[typeIdAdded].forEach((cateAdded) => {
+							if (cateAdded.cateId.toString() === cateAssigned.cateId) {
+								output += `<option value="${cateAdded.cateId}" selected>${
+									cateAdded.cateName.charAt(0).toUpperCase() +
+									cateAdded.cateName.slice(1)
+								}</option>`;
+							} else {
+								output += `<option value="${cateAdded.cateId}">${
+									cateAdded.cateName.charAt(0).toUpperCase() +
+									cateAdded.cateName.slice(1)
+								}</option>`;
+							}
+						});
+
+						output += `</select>
+							</div>
+						`;
+					} else {
+						// CateType product not assigned
+						flag = 0;
+					}
 				}
 
 				// execute by last object
@@ -144,7 +156,9 @@ app.engine(
 
 							// get all cate of this type
 							listAnotherCate[typeIdOfCate].forEach((cate) => {
-								output += `<option value="${cate.cateId}">${cate.cateName}</option>`;
+								output += `<option value="${cate.cateId}">${
+									cate.cateName.charAt(0).toUpperCase() + cate.cateName.slice(1)
+								}</option>`;
 							});
 							output += `</select>
 								</div>
@@ -152,6 +166,58 @@ app.engine(
 						}
 					}
 				}
+				return new Handlebars.SafeString(output);
+			},
+
+			getColorAssigned: (listColorAdded, listColorAssigned) => {
+				let assigned, output;
+				listColorAdded?.forEach((color) => {
+					assigned = listColorAssigned.find(
+						(colorInfo) => colorInfo.cateId === color.cateId.toString()
+					);
+
+					if (assigned) {
+						output += `<option value="${color.cateId}" selected>${color.cateName}</option>`;
+					} else {
+						output += `<option value="${color.cateId}">${color.cateName}</option>`;
+					}
+				});
+				return new Handlebars.SafeString(output);
+			},
+
+			getSizeInfo: (listSizeAdded, colorInfo) => {
+				let isExited, output;
+				listSizeAdded.forEach((size) => {
+					isExited = colorInfo.listSizeByColor.find(
+						(info) => info.sizeId === size.cateId.toString()
+					);
+					if (isExited) {
+						output += `
+						<div class ="form-check" style="margin-bottom: 14px">
+							<input value="${size.cateId}" name="size${colorInfo.cateId}" type="hidden">
+							<label class="form-check-label" for="flexCheckDefault" style="margin-right: 50px; min-width: 30px">
+								${size.cateName}
+							</label>
+							<input type="number" name="amountOfSize${colorInfo.cateId}" placeholder="Enter amount of this size" value="${isExited.amount}" min="0">
+							<label class="form-check-label" for="flexCheckDefault" style="margin-right: 10px; margin-left: 20px; min-width: 30px">Price</label>
+							<input type="number" name="price${colorInfo.cateId}" placeholder="Enter price of this size" value="${isExited.price}" min="0"></input>
+						</div>
+						`;
+					} else {
+						output += `
+						<div class ="form-check" style="margin-bottom: 14px">
+							<input value="${size.cateId}" name="size${colorInfo.cateId}" type="hidden">
+							<label class="form-check-label" for="flexCheckDefault" style="margin-right: 50px; min-width: 30px">
+								${size.cateName}
+							</label>
+							<input type="number" name="amountOfSize${colorInfo.cateId}" placeholder="Enter amount of this size" value="0" min="0">
+							<label class="form-check-label" for="flexCheckDefault" style="margin-right: 10px; margin-left: 20px; min-width: 30px">Price</label>
+							<input type="number" name="price${colorInfo.cateId}" placeholder="Enter price of this size" value="0" min="0"></input>
+						</div>
+						`;
+					}
+				});
+
 				return new Handlebars.SafeString(output);
 			},
 
@@ -267,9 +333,9 @@ app.use("/swagger.json", (req, res) => {
 	res.send(specs);
 });
 
-// // router
-// const route = require("./routes/index.route");
-// route(app);
+// router
+const route = require("./routes/index.route");
+route(app);
 
 // configure ssl server
 // const sslServer = https.createServer(
@@ -282,23 +348,6 @@ app.use("/swagger.json", (req, res) => {
 // );
 
 const PORT = 3010;
-const server = http.createServer(app);
-
-// socket io configure
-// const io = require("socket.io")(server);
-
-// router
-const route = require("./routes/index.route");
-route(app);
-
-// io.on("connection", (socket) => {
-// 	// console.log(socket.id);
-// });
-
-// io.on("error", (err) => {
-// 	console.log("Err from socket.io", err);
-// });
-
-server.listen(PORT, () =>
-	console.log(`Secure server has started on port ${PORT}`)
-);
+http
+	.createServer(app)
+	.listen(PORT, () => console.log(`Secure server has started on port ${PORT}`));

@@ -1,3 +1,5 @@
+const Account = require("../app/models/account.model");
+
 module.exports = {
 	// set amount for order
 	setAmountForSize: (size, amountOfSize) => {
@@ -52,5 +54,64 @@ module.exports = {
 				};
 			}
 		}
+	},
+
+	async handleRating(listRate, userId) {
+		if (!listRate || listRate.length === 0) {
+			return { listUserComment: [], averageScore: 0 };
+		}
+
+		let totalRate = 0,
+			account,
+			listUserComment = [];
+
+		await Promise.all(
+			listRate.map(async (rate) => {
+				account = await Account.findOne({ _id: rate.userId });
+				if (rate.userId === userId) {
+					listUserComment.unshift({
+						picture: account?.picture || "",
+						name: account.fullname,
+						score: rate.rating,
+						comment: rate.comment,
+						date: rate.date,
+						userId: rate.userId,
+					});
+				} else {
+					listUserComment.push({
+						picture: account?.picture || "",
+						name: account.fullname,
+						score: rate.rating,
+						comment: rate.comment,
+						date: rate.date,
+						userId: rate.userId,
+					});
+				}
+
+				totalRate += Number(rate.rating);
+			})
+		);
+
+		const averageScore = Number(totalRate / listRate.length);
+
+		return { listUserComment, averageScore };
+	},
+
+	sortedBySize(listInfoByColor) {
+		// sort by size asc
+		listInfoByColor.forEach((color) => {
+			color.sizes.sort(
+				(a, b) => parseFloat(a.sizeName) - parseFloat(b.sizeName)
+			);
+		});
+
+		return listInfoByColor;
+	},
+
+	sortBySize(listSize) {
+		listSize = listSize.sort(
+			(a, b) => parseFloat(a.cateName) - parseFloat(b.cateName)
+		);
+		return listSize;
 	},
 };

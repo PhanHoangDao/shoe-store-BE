@@ -55,8 +55,6 @@ class cartHelp {
 						cart.sizeId
 					);
 
-					console.log(shoeInfo, infoBySizeId);
-
 					const product = await Product.findOne({ _id: cart.productId });
 
 					cart.image = shoeInfo.avatar;
@@ -73,9 +71,9 @@ class cartHelp {
 
 	async deleteCart(arrCartId) {
 		const deletedCart = await Cart.deleteMany({ _id: { $in: arrCartId } });
-		if (deletedCart.modifiedCount > 0) {
-			return true;
-		} else return false;
+
+		if (deletedCart.modifiedCount > 0) return true;
+		return false;
 	}
 
 	async getShoeInfo(proId, colorId, sizeId) {

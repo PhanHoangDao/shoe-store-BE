@@ -45,35 +45,43 @@
                                         {{errText}}
                                     </div>
                                 {{/if}}
+                                {{#when addCustomer 'eq' true}}
+                                    <div class="form-group">
+                                        <label for="exampleInputEmail1">Account Name</label>
+                                        <input type="text" class="form-control" name="accountName" placeholder="Enter account name">
+                                    </div>
+                                {{/when}}
                                 <div class="form-group">
-                                    <label for="exampleInputEmail1">Account Name</label>
-                                    <input type="text" class="form-control" name="accountName" placeholder="Enter account name">
+                                    <label for="exampleInputPassword1">Email</label>
+                                    <input type="email" class="form-control" name="email" placeholder="Enter email" required pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}">
                                 </div>
                                 <div class="form-group">
                                     <label for="exampleInputPassword1">Password</label>
-                                    <input type="password" class="form-control" name="password" placeholder="Enter password">
+                                    <input type="password" class="form-control" name="password" placeholder="Enter password" minlength="8" required>
                                 </div>
                                 <div class="form-group">
                                     <label for="exampleInputPassword1">Full Name</label>
-                                    <input type="text" class="form-control" name="fullname" placeholder="Enter fullname">
+                                    <input type="text" class="form-control" name="fullname" placeholder="Enter fullname" required>
                                 </div>
                                 <div class="form-group">
                                     <label for="exampleInputPassword1">Address</label>
-                                    <input type="text" class="form-control" name="address" placeholder="Enter address">
-                                </div>
-                                <div class="form-group">
-                                    <label for="exampleInputPassword1">Email</label>
-                                    <input type="text" class="form-control" name="email" placeholder="Enter email">
+                                    <input type="text" class="form-control" name="address" placeholder="Enter address" required>
                                 </div>
                                 <div class="form-group">
                                     <label for="exampleInputPassword1">Number Phone</label>
-                                    <input type="text" class="form-control" name="numberPhone" placeholder="Enter number phone">
+                                    <input type="text" class="form-control" name="numberPhone" placeholder="Enter number phone" pattern="[0-9]{10,11}" required>
                                 </div>
                                 <div class="form-group">
                                     <label for="exampleInputPassword1">Permission</label>
-                                    <select name="permission" class="form-control">
-                                        <option value="0" selected="selected">Admin</option>                                    
-                                        <option value="2">User</option>
+                                    <select name="permission" class="form-control" required>
+                                        <option selected="selected" value="">Select Permission</option>
+                                        {{#when addCustomer 'eq' false}}      
+                                            <option value="0">Admin</option>    
+                                            <option value="1">Employee</option>     
+                                        {{/when}}  
+                                        {{#when addCustomer 'eq' true}}                           
+                                            <option value="2">User</option>
+                                        {{/when}}
                                     </select>
                                 </div>
                                 <button type="submit" class="btn btn-primary">Add</button>

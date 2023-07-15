@@ -1,4 +1,5 @@
 const CateType = require("../app/models/categoryType.model");
+const commonHelp = require("./commonHelp");
 
 module.exports = {
 	setUpLabels: (reqQuery) => {
@@ -26,6 +27,9 @@ module.exports = {
 			cateType = await CateType.findOne({ _id: typeId });
 
 			if (cateType.type === "color") {
+				arrayCategory[typeId]?.forEach((item) => {
+					item.cateName = commonHelp.capitalizeFirstLetter(item.cateName);
+				});
 				listColor = arrayCategory[typeId];
 				delete arrayCategory[typeId];
 			}

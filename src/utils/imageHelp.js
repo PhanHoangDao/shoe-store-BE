@@ -206,6 +206,12 @@ class imageHelp {
 		});
 		return arrayObjectImage;
 	}
+
+	deleteImages(listImage) {
+		listImage.forEach((fileName) => {
+			fs.unlink("src/public/testUpload/" + fileName, (err) => console.log(err));
+		});
+	}
 }
 
 module.exports = new imageHelp();

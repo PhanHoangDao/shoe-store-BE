@@ -15,6 +15,7 @@ const {
 const CategoryType = require("../app/models/categoryType.model");
 const Category = require("../app/models/category.model");
 const categoryHelp = require("../utils/categoryHelp");
+const productHelp = require("../utils/productHelp");
 const Shoe = require("../app/models/product.model");
 const Account = require("../app/models/account.model");
 const passportConfig = require("../app/middlewares/passport.mdw");
@@ -54,7 +55,7 @@ function route(app, io) {
 		}, {});
 
 		var resultFilter = await categoryHelp.getCateSizeAndColor(result);
-		res.locals.listSizeAdded = resultFilter.listSize;
+		res.locals.listSizeAdded = productHelp.sortBySize(resultFilter.listSize);
 		res.locals.listColor = resultFilter.listColor;
 		res.locals.listAnotherCateAdded = result;
 		res.locals.listCateType = listCateType;
@@ -78,12 +79,6 @@ function route(app, io) {
 		next();
 	});
 
-	// use io socket for all app
-	// app.use((req, res, next) => {
-	// 	req.io = io;
-	// 	next();
-	// });
-
 	// admin routes handle
 	app.use("/admin", passportConfig.authAdmin, adminRouter);
 
@@ -99,7 +94,13 @@ function route(app, io) {
 	// site and index
 	app.use("/api/v1", siteRouter);
 
-	//admin login page and handle login
+	//admin login page, handle login, handle result from paypal
 	app.use("/", siteAdminRouter);
+
+	// 404 not found
+	app.use((req, res, next) => {
+		res.render("adminPages/404", { layout: false });
+		return;
+	});
 }
 module.exports = route;

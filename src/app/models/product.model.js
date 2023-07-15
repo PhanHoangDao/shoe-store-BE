@@ -13,6 +13,7 @@ const Product = new Schema({
 		enum: ["male", "female"],
 		default: "male",
 	},
+	commentAndRate: { type: Array, default: [] },
 });
 
 module.exports = mongoose.model("Product", Product);

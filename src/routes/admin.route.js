@@ -9,6 +9,7 @@ const promotionalController = require("../app/controllers/promotionalController"
 
 // ACCOUNT INTERFACE
 router.get("/accounts", accountController.manager);
+router.get("/accountsByCustomer", accountController.manager);
 router.get("/accounts/add", accountController.renderCreate);
 router.get("/accounts/update/:id", accountController.renderUpdate);
 //ACCOUNT HANDLE
@@ -24,8 +25,8 @@ router.get("/category/add/:typeId", cateController.renderCreate);
 router.get("/category/update/:typeId/:cateId", cateController.renderUpdate);
 // Handle
 router.get("/category/:typeId", cateController.manager);
-router.post("/category/:typeId/add", cateController.create);
-router.put("/category/update/:typeId/:cateId", cateController.update);
+router.post("/category/:typeId/add", cateController.create.bind(cateController));
+router.put("/category/update/:typeId/:cateId", cateController.update.bind(cateController));
 router.delete("/category/delete/:id", cateController.delete);
 router.get("/category/:slug", cateController.findCategoryByName);
 
@@ -36,8 +37,8 @@ router.get("/categoryType/update/:id", cateTypeController.renderUpdate);
 // API
 router.get("/categoryType", cateTypeController.manager);
 router.get("/categoryType/getAll", cateTypeController.getAll);
-router.post("/categoryType/add", cateTypeController.create);
-router.put("/categoryType/update/:id", cateTypeController.update);
+router.post("/categoryType/add", cateTypeController.create.bind(cateTypeController));
+router.put("/categoryType/update/:id", cateTypeController.update.bind(cateTypeController));
 router.delete("/categoryType/delete/:id", cateTypeController.delete);
 router.get("/categoryType/:slug", cateTypeController.findCategoryByName);
 
@@ -52,6 +53,7 @@ router.delete("/product/delete/:id", shoeController.delete);
 
 //PROMOTIONAL
 router.get("/promotional", promotionalController.manager);
+router.get("/promotionalByCustomer", promotionalController.manager);
 router.get("/promotional/add", promotionalController.renderCreate);
 router.post(
 	"/promotional/save",
@@ -84,6 +86,6 @@ router.put(
 router.put("/order/saveUpdate/:id", orderController.saveUpdate);
 
 //dashboard
-router.get("/", cateTypeController.manager);
+router.get("/", orderController.businessStatic);
 
 module.exports = router;

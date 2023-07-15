@@ -3,7 +3,7 @@ const Schema = mongoose.Schema;
 
 const CategoryType = new Schema(
 	{
-		type: { type: String, maxLength: 255 },
+		type: { type: String, maxLength: 255, lowerCase: true, trim: true },
 		description: { type: String, maxLength: 600 },
 	},
 	{

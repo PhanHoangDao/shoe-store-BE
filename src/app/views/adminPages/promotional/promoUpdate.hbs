@@ -47,27 +47,31 @@
                                 {{/if}}
                                 <div class="form-group">
                                     <label for="exampleInputEmail1">Code</label>
-                                    <input type="text" class="form-control" name="code" placeholder="Enter code" value="{{promo.code}}">
+                                    <input type="text" class="form-control" name="code" placeholder="Enter code" value="{{promo.code}}" required>
                                 </div>
                                 <div class="form-group">
                                     <label for="exampleInputPassword1">Discount</label>
-                                    <input type="text" class="form-control" name="discount" placeholder="Enter discount percent" value="{{promo.discount}}">
+                                    <input type="number" class="form-control" name="discount" placeholder="Enter discount percent" value="{{promo.discount}}" required>
                                 </div>
                                 <div class="form-group">
                                     <label for="exampleInputPassword1">Description</label>
-                                    <input type="text" class="form-control" name="description" placeholder="Enter description" value="{{promo.description}}">
+                                    <input type="text" class="form-control" name="description" placeholder="Enter description" value="{{promo.description}}" required>
                                 </div>
+                                 <!-- Time Range -->
                                 <div class="form-group">
-                                    <label for="exampleInputPassword1">Start Date</label>
-                                    <input type="text" class="form-control" name="startDate" placeholder="Enter start date" value="{{promo.startDate}}">
-                                </div>
-                                <div class="form-group">
-                                    <label for="exampleInputPassword1">End Date</label>
-                                    <input type="text" class="form-control" name="endDate" placeholder="Enter end date" value="{{promo.endDate}}">
+                                    <label>Date Range of Promotional</label>
+                                    <div class='input-group'>
+                                        <input type='text' class="form-control daterange" name="dateRange" required value="{{promo.dateRange}}"/>
+                                        <div class="input-group-append">
+                                            <span class="input-group-text">
+                                                <span class="ft-calendar"></span>
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="form-group">
                                     <label for="exampleInputPassword1">Amount</label>
-                                    <input type="text" class="form-control" name="amount" placeholder="Enter Amount" value="{{promo.amount}}">
+                                    <input type="number" class="form-control" name="amount" placeholder="Enter Amount" value="{{promo.amount}}" required>
                                 </div>
                                 <button type="submit" class="btn btn-primary">Submit</button>
                             </form>
@@ -76,5 +80,243 @@
                 </div>
             </div>
         </div>
+
+        <!-- Pick-A-Date Picker start -->
+        <section id="pick-a-date" style="display: none">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Pick-A-Date Picker</h4>
+                    <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                    <div class="heading-elements">
+                        <ul class="list-inline mb-0">
+                            <li><a data-action="collapse"><i class="ft-minus"></i></a></li>
+                            <li><a data-action="reload"><i class="ft-rotate-cw"></i></a></li>
+                            <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                            <li><a data-action="close"><i class="ft-x"></i></a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-content collapse show">
+                    <div class="card-body">
+                        <p>Pickadate.js is a mobile-friendly, responsive, and lightweight jQuery date &amp; time input picker.</p>
+                        <form action="#">
+                            <div class="row">
+                                <div class="col-md-6 col-sm-6 col-12">
+                                    <div class="form-group">
+                                        <label>Basic Pick-a-date</label>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text">
+                                                    <span class="ft-calendar"></span>
+                                                </span>
+                                            </div>
+                                            <input type='text' class="form-control pickadate" placeholder="Basic Pick-a-date" />
+                                        </div>
+                                        <small class="text-muted">Use <code>.pickadate</code> class for basic Pick-A-Date Picker. </small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Pick-a-date with short string</label>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text">
+                                                    <span class="ft-calendar"></span>
+                                                </span>
+                                            </div>
+                                            <input type='text' class="form-control pickadate-short-string" placeholder="String Short of Month &amp; Week"/>
+                                        </div>
+                                        <small class="text-muted">Use <code>.pickadate-short-string</code> class for short Month &amp; Week String. </small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Select Year</label>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text">
+                                                    <span class="ft-calendar"></span>
+                                                </span>
+                                            </div>
+                                            <input type='text' class="form-control pickadate-select-year" placeholder="Select Year"/>
+                                        </div>
+                                        <small class="text-muted">Use <code>.pickadate-select-year</code> class to allow user to select year. </small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Change First Weekday</label>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text">
+                                                    <span class="ft-calendar"></span>
+                                                </span>
+                                            </div>
+                                            <input type='text' class="form-control pickadate-firstday" placeholder="First Weekday to Monday"/>
+                                        </div>
+                                        <small class="text-muted">Use <code>.pickadate-firstday</code> class to change first weekday to Monday. </small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Change/Hide Buttons</label>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text">
+                                                    <span class="ft-calendar"></span>
+                                                </span>
+                                            </div>
+                                            <input type='text' class="form-control pickadate-buttons" placeholder="Hide/Change Buttons"/>
+                                        </div>
+                                        <small class="text-muted">Use <code>.pickadate-buttons</code> class to change/hide buttons. </small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Date Limits</label>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text">
+                                                    <span class="ft-calendar"></span>
+                                                </span>
+                                            </div>
+                                            <input type='text' class="form-control pickadate-limits" placeholder="Date Limits"/>
+                                        </div>
+                                        <small class="text-muted">Use <code>.pickadate-limits</code> class to give selection from range of some dates. </small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Change Formats</label>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text">
+                                                    <span class="ft-calendar"></span>
+                                                </span>
+                                            </div>
+                                            <input type='text' class="form-control pickadate-format" placeholder="Change Formats"/>
+                                        </div>
+                                        <small class="text-muted">Use <code>.pickadate-format</code> class to change date display formats. </small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Change Arrows</label>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text">
+                                                    <span class="ft-calendar"></span>
+                                                </span>
+                                            </div>
+                                            <input type='text' class="form-control pickadate-arrow" placeholder="Change Formats"/>
+                                        </div>
+                                        <small class="text-muted">Use <code>.pickadate-arrow</code> class to change date display formats. </small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Picker Translation</label>
+                                        <div class="input-group">
+                                            <input type='text' class="form-control pickadate-translations" placeholder="In Another Language"/>
+                                            <div class="input-group-append">
+                                                <span class="input-group-text">
+                                                    <span class="ft-calendar"></span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">Use <code>.pickadate-translations</code> class for language translation.</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 col-sm-6 col-12">
+                                    <div class="form-group">
+                                        <label>Disable days of the week</label>
+                                        <div class="input-group">
+                                            <input type='text' class="form-control pickadate-disable-weekday" placeholder="Disable days of the week"/>
+                                            <div class="input-group-append">
+                                                <span class="input-group-text">
+                                                    <span class="ft-calendar"></span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">Disable certain days of the week, such as all Saturdays (7th day of week) and Sundays (1st day of week), by passing an integer between 1 and 7</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Disable arbitrary dates</label>
+                                        <div class="input-group">
+                                            <input type='text' class="form-control pickadate-disable-dates" placeholder="Disable Dates"/>
+                                            <div class="input-group-append">
+                                                <span class="input-group-text">
+                                                    <span class="ft-calendar"></span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">Pass an array of arbitrary dates (each formatted as [ yyyy, mm, dd ]) to disable them..</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Month &amp; Year Selectors</label>
+                                        <div class="input-group">
+                                            <input type='text' class="form-control pickadate-selectors" placeholder="Month &amp; Year Selector"/>
+                                            <div class="input-group-append">
+                                                <span class="input-group-text">
+                                                    <span class="ft-calendar"></span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">Use <code>.pickadate-selectors</code> class to set month &amp; year selectable.</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Month &amp; Year Dropdown</label>
+                                        <div class="input-group">
+                                            <input type='text' class="form-control pickadate-dropdown" placeholder="Month &amp; Year Dropdown"/>
+                                            <div class="input-group-append">
+                                                <span class="input-group-text">
+                                                    <span class="ft-calendar"></span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">Use <code>.pickadate-dropdown</code> class to set <code>select</code> to month and year selection</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Picker Events</label>
+                                        <div class="input-group">
+                                            <input type='text' class="form-control pickadate-events" placeholder="Open console to check events"/>
+                                            <div class="input-group-append">
+                                                <span class="input-group-text">
+                                                    <span class="ft-calendar"></span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">Use <code>.pickadate-events</code> class to check events as the user interacts with the picker.</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Minimum and maximum date range</label>
+                                        <div class="input-group">
+                                            <input type='text' class="form-control pickadate-minmax" placeholder="In Another Language"/>
+                                            <div class="input-group-append">
+                                                <span class="input-group-text">
+                                                    <span class="ft-calendar"></span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">Use <code>.pickadate-minmax</code> class for language translation.</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Disable picker for native calendar</label>
+                                        <div class="row">
+                                            <div class="col-lg-12 mb-1">
+                                                <div class="input-group">
+                                                    <div class="input-group-prepend">
+                                                        <span class="input-group-text">
+                                                            <span class="ft-calendar"></span>
+                                                        </span>
+                                                    </div>
+                                                    <input id="picker_from" class="form-control datepicker" type="date">
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-12">
+                                                <div class="input-group">
+                                                    <div class="input-group-prepend">
+                                                        <span class="input-group-text">
+                                                            <span class="ft-calendar"></span>
+                                                        </span>
+                                                    </div>
+                                                    <input id="picker_to" class="form-control datepicker" type="date">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">Use <code>.pickadate-nativ</code> class to change date display formats. </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Pick-A-Date Picker end -->
     </div>
 </div>

@@ -1,11 +1,17 @@
 <div class="app-content content">
     <div class="content-wrapper">
     <div class="content-wrapper-before"></div>
-    <div class="content-header row">
-        <div class="content-header-left col-md-4 col-12 mb-2">
-        <h3 class="content-header-title">Product Manager</h3>
+    <div class="content-header row" style="align-items: center;">
+        <div class="content-header-left col-md-3 col-12 mb-2">
+            <h3 class="content-header-title">Product Manager</h3>
         </div>
-        <div class="content-header-right col-md-8 col-12">
+        <div class="content-header-left col-md-5 col-12 mb-2">
+            <form action="/admin/product" method="GET" style="display: flex">
+                <input class="form-control" name="search" type="text" placeholder="Search By Name" value="{{searchQuery}}">
+                <button type="submit" class="btn btn-primary">Search</button>
+            </form>
+        </div>
+        <div class="content-header-right col-md-4 col-12 mb-2">
         <div class="breadcrumbs-top float-md-right">
             <div class="breadcrumb-wrapper mr-1">
             <ol class="breadcrumb">
@@ -24,12 +30,7 @@
                 {{#each shoes}}
                 <div class="col-lg-4 col-md-12">
                     <div class="card">
-                        <div class="card-body">
-                            <h4 class="card-title">
-                                {{#each listBrand}}
-                                    {{{getCategory this._id this.name ../this.brand}}} 
-                                {{/each}}
-                            </h4>
+                        <div class="card-body" style="max-height: 62px; font-weight: 700; letter-spacing: 1px;">
                             <h6 class="card-subtitle text-muted">{{this.name}}</h6>
                         </div>
                         <img class="" src="/uploadWithRefactorDB/{{this.avatar}}" alt="Card image cap" style="min-height: 380px">
@@ -37,17 +38,44 @@
                             <p class="card-text">{{this.introduce}}</p>
                             <p class="card-text" style="color: #fa626b">{{this.price}}</p> 
                         </div>
-                        <div class="card-footer border-top-blue-grey border-top-lighten-5 text-muted">
-                            <a href="/admin/product/update/{{this._id}}" style="margin: 18%;"><button class="btn btn-warning">Edit</button></a>
-                            <a data-id="{{this._id}}" data-toggle="modal" data-target="#shoeModal">
-                                <button class="btn btn-danger">Delete</button>
-                            </a>
-                        </div>
+                        {{!-- {{#when permission 'eq' 0}} --}}
+                            <div class="card-footer border-top-blue-grey border-top-lighten-5 text-muted">
+                                <a href="/admin/product/update/{{this._id}}" style="margin: 18%;"><button class="btn btn-warning">Edit</button></a>
+                                <a data-id="{{this._id}}" data-toggle="modal" data-target="#shoeModal">
+                                    <button class="btn btn-danger">Delete</button>
+                                </a>
+                            </div>
+                        {{!-- {{/when}} --}}
                     </div>
                 </div>
                 {{/each}}
             </div>
         </section>
+        <div class="col-lg-12 col-md-12" style="display: flex; justify-content: center">
+            <nav class="mb-3" aria-label="Page navigation">
+                <ul class="pagination">
+                    <li class="page-item">
+                        {{#if hasPrevPage}}
+                            <a class="page-link" href="?page={{prevPage}}{{#if searchQuery}}&search={{searchQuery}}{{/if}}" aria-label="Previous">
+                                <span aria-hidden="true">« Prev</span>
+                                <span class="sr-only">Previous</span>
+                            </a>
+                        {{/if}}
+                    </li>
+                    {{#each pages}}
+                        <li class="page-item {{#when ../currentPage 'eq' this}} active {{/when}}"><a class="page-link" href="?page={{this}}{{#if ../searchQuery}}&search={{../searchQuery}}{{/if}}">{{this}}</a></li>
+                    {{/each}}
+                    <li class="page-item">
+                        {{#if hasNextPage}}
+                            <a class="page-link" href="?page={{nextPage}}{{#if searchQuery}}&search={{searchQuery}}{{/if}}" aria-label="Next">
+                                <span aria-hidden="true">Next »</span>
+                                <span class="sr-only">Next</span>
+                            </a>
+                        {{/if}}
+                    </li>
+                </ul>
+            </nav>
+        </div>
     </div>
     </div>
 </div>

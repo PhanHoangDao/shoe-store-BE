@@ -179,7 +179,7 @@ class accountController {
 		});
 		if (!existedEmail) {
 			const promoCode = await promotionalController.promoFirstLogin(
-				req.body.userId
+				newAccount._id
 			);
 			mailService.sendMailForFirstLogin(req.body.email, promoCode);
 		}
@@ -398,34 +398,71 @@ class accountController {
 		res.redirect("/");
 	}
 
-	manager(req, res, next) {
-		Account.find()
-			.then((accounts) => {
-				res.render("adminPages/account/manager", {
+	async manager(req, res, next) {
+		try {
+			const routerUrl = req.url;
+			// employee (just display account of customer) or admin/accountsByCustomer
+			if (
+				jwtHelp.decodeTokenGetPermission(req.cookies.Authorization) === 1 ||
+				routerUrl === "/accountsByCustomer"
+			) {
+				const accounts = await Account.find({ permission: 2 });
+				return res.render("adminPages/account/manager", {
 					accounts: mutipleMongooseToObject(accounts),
 					layout: "adminLayout",
+					permission: jwtHelp.decodeTokenGetPermission(
+						req.cookies.Authorization
+					),
+					routerUrl
 				});
-			})
-			.catch((err) => {
-				next(err);
+			}
+
+			// admin display employee accounts
+			const accounts = await Account.find({
+				$or: [{ permission: 0 }, { permission: 1 }],
 			});
+			res.render("adminPages/account/manager", {
+				accounts: mutipleMongooseToObject(accounts),
+				layout: "adminLayout",
+				permission: 0,
+			});
+		} catch (err) {
+			console.error(err);
+		}
 	}
 
 	// [GET] /accounts/renderCreate
 	renderCreate(req, res) {
-		if (req.query != "warning") delete req.session.errImage;
+		if (req.query != "warning") delete req.session.errText;
+		const routerUrl = req.headers.referer;
+		let addCustomer = false;
+		if(routerUrl?.includes("/accountsByCustomer")) {
+			addCustomer = true;
+		}
+		console.log(routerUrl);
+		console.log("test", addCustomer);
 		res.render("adminPages/account/addAccount", {
 			layout: "adminLayout",
+			addCustomer
 		});
 	}
 
 	// [GET] /accounts/update/:id
 	renderUpdate(req, res) {
+		if (req.query != "warning") delete req.session.errText;
+		const routerUrl = req.headers.referer;
+		let restrictPermission = false;
+		if(routerUrl?.includes("/accountsByCustomer")) {
+			restrictPermission = true;
+		}
+		console.log(routerUrl);
+		console.log(restrictPermission);
 		Account.findById({ _id: req.params.id })
 			.then((account) => {
 				res.render("adminPages/account/accountUpdate", {
 					account: mongooseToObject(account),
 					layout: "adminLayout",
+					restrictPermission
 				});
 			})
 			.catch((err) => console.log(err));
@@ -434,9 +471,14 @@ class accountController {
 	//[POST] /accounts/save
 	async create(req, res) {
 		req.body.authType = "local";
+		if(!req.body.accountName) {
+			req.body.accountName = req.body.email;
+		}
+		console.log(req.body);
 		const existedAccount = await Account.findOne({
 			accountName: req.body.accountName,
 		});
+		console.log(existedAccount);
 		if (existedAccount) {
 			// url for redirect back
 			const backUrl = req.header("Referer") || "/";
@@ -446,30 +488,33 @@ class accountController {
 			return res.redirect(backUrl + "?warning");
 		}
 		const newAccount = new Account(req.body);
-		newAccount
-			.save()
-			.then(() => {
-				res.redirect("/admin/accounts");
-			})
-			.catch((err) => {
-				console.log(err);
-				res.redirect("/admin/accounts");
-			});
+		console.log(newAccount);
+		await newAccount.save();
+		if (newAccount.permission === 2) {
+			return res.redirect("/admin/accountsByCustomer");
+		}
+		return res.redirect("/admin/accounts");
 	}
 
 	//[PUT] /accounts/update/:id
-	update(req, res, next) {
-		Account.updateOne({ _id: req.params.id }, req.body)
-			.then(() => {
-				res.redirect(`/admin/accounts`);
-			})
-			.catch((err) => {
-				console.log(err);
-			});
+	async update(req, res, next) {
+		const account = await Account.findOneAndUpdate(
+			{ _id: req.params.id },
+			req.body,
+			{ new: true }
+		);
+
+		if (account.permission === 2) {
+			return res.redirect("/admin/accountsByCustomer");
+		}
+		return res.redirect("/admin/accounts");
 	}
 
 	//[DELETE] /accounts/delete/:id
 	delete(req, res) {
+		if (jwtHelp.decodeTokenGetPermission(req.cookies.Authorization) === 1) {
+			return res.redirect("back");
+		}
 		Account.deleteOne({ _id: req.params.id })
 			.then(() => {
 				res.redirect("back");

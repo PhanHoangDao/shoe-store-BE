@@ -8,6 +8,12 @@ const Order = new Schema(
 		customerId: { type: String, maxLength: 255, required: true },
 		total: { type: Number, maxLength: 255 },
 		status: { type: Number },
+		isRated: { type: Boolean, default: false },
+		paymentMethod: {
+			type: String,
+			enum: ["shipCOD", "paypal"],
+			default: "shipCOD",
+		},
 	},
 	{
 		_id: false,

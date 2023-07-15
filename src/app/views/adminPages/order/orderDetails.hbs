@@ -54,9 +54,9 @@
                                         {{#each orderDetails}}
                                         <tr>
                                             <th scope="row">{{inc @index}}</th>
-                                            <td><img class="" src="/upload/{{this.image}}" alt="Card image cap" style="width: 100px; height: 100px"></td>
+                                            <td><img class="" src="/uploadWithRefactorDB/{{this.image}}" alt="Card image cap" style="width: 100px; height: 100px"></td>
                                             <td>{{this.productName}}</td>
-                                            <td>{{this.size}}</td>
+                                            <td>{{this.sizeName}}</td>
                                             <td>{{this.quantity}}</td>
                                             <td>{{this.price}}</td>
                                             <td>{{{setSubTotal this.quantity this.price}}}</td>

@@ -26,10 +26,10 @@ module.exports = function (fileName) {
 			) {
 				cb(null, true);
 			} else {
-				const err = "Only .png, .jpg and .jpeg format allowed!";
+				const err = "Only .png, .jpg, .webp and .jpeg format allowed!";
 				return cb(err, false);
 			}
 		},
-	}).array(`${fileName}`, 1000));
+	}).array(`${fileName}`, 100));
 	// return upload = multer({storage: storage}).single(`${fileName}`);
 };
