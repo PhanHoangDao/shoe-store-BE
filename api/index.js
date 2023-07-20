@@ -1,3 +1,3 @@
-const app = require("../src/app");
+const appAPI = require("../src/app.js");
 
-export default app;
+export default appAPI;
