@@ -5,8 +5,7 @@
   "main": "app.js",
   "scripts": {
     "dev": "nodemon src/app.js",
-    "start": "node src/app.js",
-    "vercel-build": "echo hello"
+    "start": "node src/app.js"
   },
   "author": "Sand Lee",
   "license": "ISC",
